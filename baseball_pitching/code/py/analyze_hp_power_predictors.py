@@ -17,6 +17,18 @@ COLS = {
     "pp_ecc_force": "peak_eccentric_force_[n]_mean_pp",
 }
 
+PLYO_POWER_TERMS = ("plyo", "pushup", "pp")
+POWER_TERMS = ("power",)
+
+
+def find_plyo_power_columns(data):
+    return [
+        column
+        for column in data.columns
+        if any(term in column.lower() for term in PLYO_POWER_TERMS)
+        and any(term in column.lower() for term in POWER_TERMS)
+    ]
+
 
 def fit_model(data, predictors):
     columns = [COLS["y"]] + [COLS[predictor] for predictor in predictors]
@@ -68,6 +80,14 @@ def main():
     for label, column in COLS.items():
         print(label, column, "non-null", int(data[column].notna().sum()))
 
+    plyo_power_columns = find_plyo_power_columns(data)
+    print("\nPLYO PUSHUP POWER COLUMN CHECK")
+    if plyo_power_columns:
+        for column in plyo_power_columns:
+            print(column)
+    else:
+        print("No plyo pushup peak-power column found in hp_obp.csv.")
+
     print("\nUNIVARIATE")
     for predictor in [
         "cmj_peak_power",
@@ -105,7 +125,7 @@ def main():
     print("delta asym over cmj_peak_power", round(cmj_full - cmj_base, 4))
     print("delta cmj_peak_power over p1p2", round(cmj_full - cmj_asym, 4))
 
-    print("\nCOMPLETE CASE: Plyo PP vs CMJ PP")
+    print("\nCOMPLETE CASE: Plyo pushup force vs CMJ peak power")
     pp_case = data[
         [
             COLS["y"],
