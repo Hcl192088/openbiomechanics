@@ -21,8 +21,8 @@ Pitch and pitcher identifiers are hidden by default for blind labeling. Use
 
 - `hip_shoulder_separation`: present, absent, unclear
 - `lower_body_dominance`: glute, quad, mixed, unclear
-- `direction`: stride, hip_extension, unclear
-- `shoulder_horizontal_abduction`: early, neutral, excessive, unclear
+- `direction`: good, bad, unclear
+- `shoulder_horizontal_abduction`: good, average, bad, unclear
 - `heel_connection`: connected, early_extension, unclear
 - `drift`: present, absent, unclear
 
