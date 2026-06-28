@@ -23,6 +23,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 import pandas as pd
+import numpy as np
 
 
 EXPERIMENT_DIR = Path(__file__).resolve().parent
@@ -168,24 +169,49 @@ def load_motion_data(c3d_path: Path, frame_step: int) -> dict[str, object]:
     pts = c3d["data"]["points"]
     labels = c3d["parameters"]["POINT"]["LABELS"]["value"]
     marker_labels = [x.decode().strip() if isinstance(x, bytes) else str(x).strip() for x in labels]
-    indices = {name: marker_labels.index(name) for pair in SKELETON_CONNECTIONS for name in pair if name in marker_labels}
+    units_param = c3d["parameters"]["POINT"]["UNITS"]["value"]
+    unit_str = units_param[0].decode().strip() if isinstance(units_param[0], bytes) else str(units_param[0]).strip()
+    unit_key = unit_str.lower()
+    if unit_key == "m":
+        scale = 1000.0
+    elif unit_key in {"mm", "millimeter", "millimeters"}:
+        scale = 1.0
+    else:
+        raise RuntimeError(f"Unsupported C3D point unit: {unit_str}")
+
+    needed = {marker for pair in SKELETON_CONNECTIONS for marker in pair}
+    indices = {label: idx for idx, label in enumerate(marker_labels) if label in needed}
+    fps = float(c3d["header"]["points"]["frame_rate"])
+    first_frame = c3d["header"]["points"]["first_frame"]
+    n_frames = pts.shape[2]
+    frame_numbers = list(range(0, n_frames, frame_step))
     frames = []
 
-    for frame in range(0, pts.shape[2], frame_step):
+    for frame in frame_numbers:
         frame_data = {}
         for label, idx in indices.items():
             val = pts[:3, idx, frame]
-            if not any(pd.isna(val)) and not any(val == 0):
-                frame_data[label] = [float(val[0]), float(val[2]), -float(val[1])]
+            if not np.any(val == 0) and not np.any(np.isnan(val)):
+                frame_data[label] = [float(val[0]) * scale, float(val[2]) * scale, -float(val[1]) * scale]
         frames.append(frame_data)
 
     if not frames:
         raise RuntimeError("No valid marker frames found in C3D.")
 
+    effective_fps = fps / frame_step
+    times = [(first_frame + frame - 1) / fps for frame in frame_numbers]
     return {
-        "fps": float(c3d["header"]["points"]["frame_rate"]) / frame_step,
+        "fps": effective_fps,
         "connections": SKELETON_CONNECTIONS,
         "frames": frames,
+        "metadata": {
+            "fps": effective_fps,
+            "n_frames": len(frames),
+            "source_n_frames": n_frames,
+            "first_frame": first_frame,
+            "times": times,
+            "connections": SKELETON_CONNECTIONS,
+        },
     }
 
 
@@ -486,7 +512,7 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=20260628)
     parser.add_argument("--pitchers", type=int, default=20)
     parser.add_argument("--pitches-per-pitcher", type=int, default=3)
-    parser.add_argument("--frame-step", type=int, default=4)
+    parser.add_argument("--frame-step", type=int, default=1)
     parser.add_argument("--rebuild-manifest", action="store_true")
     parser.add_argument("--check-first-load", action="store_true")
     parser.add_argument("--no-browser", action="store_true")
