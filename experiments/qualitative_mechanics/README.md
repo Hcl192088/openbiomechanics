@@ -23,6 +23,7 @@ Pitch and pitcher identifiers are hidden by default for blind labeling. Use
 - `lower_body_dominance`: glute, quad, mixed, unclear
 - `direction`: good, bad, unclear
 - `shoulder_horizontal_abduction`: good, average, bad, unclear
+- `torso_velo_z`: fast, slow, unclear
 - `heel_connection`: connected, early_extension, unclear
 - `drift`: good, average, bad, unclear
 

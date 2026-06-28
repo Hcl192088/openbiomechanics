@@ -58,6 +58,7 @@ LABEL_FIELDS = [
     "lower_body_dominance",
     "direction",
     "shoulder_horizontal_abduction",
+    "torso_velo_z",
     "heel_connection",
     "drift",
 ]
@@ -271,6 +272,7 @@ textarea { min-height:64px; resize:vertical; }
       <label>Glute / quad dominance<select name="lower_body_dominance"><option>unclear</option><option>glute</option><option>quad</option><option>mixed</option></select></label>
       <label>Direction<select name="direction"><option>unclear</option><option>good</option><option>bad</option></select></label>
       <label>Shoulder horizontal abduction<select name="shoulder_horizontal_abduction"><option>unclear</option><option>good</option><option>average</option><option>bad</option></select></label>
+      <label>Torso Velo Z<select name="torso_velo_z"><option>unclear</option><option>fast</option><option>slow</option></select></label>
       <label>Heel connection<select name="heel_connection"><option>unclear</option><option>connected</option><option>early_extension</option></select></label>
       <label>Drift<select name="drift"><option>unclear</option><option>good</option><option>average</option><option>bad</option></select></label>
       <label>Skip reason<input name="skip_reason" placeholder="only when skipped"></label>

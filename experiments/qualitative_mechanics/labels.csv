@@ -1,1 +1,1 @@
-saved_at_utc,rater_id,session_pitch,pitcher_id,p_throws,order,view_used,playback_speed,hip_shoulder_separation,lower_body_dominance,direction,shoulder_horizontal_abduction,heel_connection,drift,skipped,skip_reason,notes
+saved_at_utc,rater_id,session_pitch,pitcher_id,p_throws,order,view_used,playback_speed,hip_shoulder_separation,lower_body_dominance,direction,shoulder_horizontal_abduction,torso_velo_z,heel_connection,drift,skipped,skip_reason,notes
