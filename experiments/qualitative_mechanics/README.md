@@ -10,9 +10,12 @@ experiment, but uses this repo's C3D skeleton data instead of video.
 1. Start the local experiment server.
 2. Enter a rater id.
 3. Label pitches in manifest order.
-4. Choose the view you actually used: home, open side, or free.
+4. Choose the view you actually used: home, open side, second base, or free.
 5. Skip clips that are not displayable or not judgeable, and record why.
 6. Do not inspect quantitative metric values while labeling.
+
+Pitch and pitcher identifiers are hidden by default for blind labeling. Use
+`Reveal IDs` only for debugging or audit checks.
 
 ## Labels
 
@@ -25,9 +28,12 @@ experiment, but uses this repo's C3D skeleton data instead of video.
 
 ## Sampling
 
-The default manifest keeps repeated pitches from the same pitcher so that
-pitch-to-pitch consistency can be checked. Later analysis should be run both
-pooled and grouped by pitcher.
+The default manifest is randomized with a fixed seed and keeps repeated pitches
+from the same pitcher so that pitch-to-pitch consistency can be checked. Later
+analysis should be run both pooled and grouped by pitcher.
+
+Open-side view is handedness-aware: left-handed pitchers use the opposite
+lateral camera offset from right-handed pitchers.
 
 ## Files
 

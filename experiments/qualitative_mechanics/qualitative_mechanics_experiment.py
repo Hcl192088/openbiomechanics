@@ -234,6 +234,7 @@ button.primary { background:#1f6feb; border-color:#2f81f7; }
 button.warn { background:#6e2c2c; border-color:#a54242; }
 label { display:block; margin-top:12px; font-size:13px; color:#bdc7d5; }
 select, input, textarea { width:100%; box-sizing:border-box; }
+input[type="range"] { width:100%; }
 textarea { min-height:64px; resize:vertical; }
 .status { color:#9fb0c4; font-size:13px; line-height:1.4; }
 .pill { padding:3px 8px; border-radius:999px; background:#2d333b; font-size:12px; }
@@ -252,12 +253,18 @@ textarea { min-height:64px; resize:vertical; }
       <button onclick="nextItem()">Next</button>
       <button onclick="setView('home')">Home</button>
       <button onclick="setView('side')">Open side</button>
+      <button onclick="setView('second')">Second base</button>
       <button onclick="setView('free')">Free</button>
+      <button onclick="toggleReveal()">Reveal IDs</button>
     </div>
     <div class="row">
       <button onclick="togglePlay()">Play/Pause</button>
       <span class="pill" id="viewPill">view: home</span>
       <select id="speed"><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option></select>
+    </div>
+    <div class="row">
+      <input id="frameSlider" type="range" min="0" max="0" value="0" oninput="seekFrame(this.value)">
+      <span class="pill" id="frameText">0 / 0</span>
     </div>
     <form id="labelForm">
       <label>Hip-shoulder separation<select name="hip_shoulder_separation"><option>unclear</option><option>present</option><option>absent</option></select></label>
@@ -284,6 +291,7 @@ let idx = 0;
 let motion = null;
 let scene, camera, renderer, controls, lines = [];
 let currentFrame = 0, playing = true, lastTime = 0, currentView = 'home';
+let revealIds = false;
 
 async function api(path, opts) {
   const res = await fetch(path, opts);
@@ -337,6 +345,8 @@ function updateSkeleton() {
       line.geometry.setFromPoints([new THREE.Vector3(...a), new THREE.Vector3(...b)]);
     }
   }
+  document.getElementById('frameSlider').value = currentFrame;
+  document.getElementById('frameText').textContent = currentFrame + ' / ' + (motion.frames.length - 1);
 }
 
 function centerOfFrame() {
@@ -360,20 +370,35 @@ function setView(view) {
   } else if (view === 'side') {
     const lateral = item.p_throws === 'L' ? -5000 : 5000;
     camera.position.set(target.x, target.y + 1000, target.z + lateral);
+  } else if (view === 'second') {
+    camera.position.set(target.x - 8000, target.y + 1000, target.z);
   }
   camera.lookAt(target);
   controls.update();
 }
 
+function updateItemStatus() {
+  const item = manifest[idx] || {};
+  const base = `Item ${idx + 1}/${manifest.length}`;
+  const detail = revealIds ? ` | pitch ${item.session_pitch} | pitcher ${item.pitcher_id} | throws ${item.p_throws}` : '';
+  document.getElementById('itemStatus').textContent = base + detail;
+}
+
+function toggleReveal() {
+  revealIds = !revealIds;
+  updateItemStatus();
+}
+
 async function loadItem() {
   const item = manifest[idx];
   document.getElementById('loading').style.display = 'block';
-  document.getElementById('loading').textContent = 'Loading ' + item.session_pitch + '...';
-  document.getElementById('itemStatus').textContent =
-    `Item ${idx + 1}/${manifest.length} | pitch ${item.session_pitch} | pitcher ${item.pitcher_id} | throws ${item.p_throws}`;
+  document.getElementById('loading').textContent = revealIds ? ('Loading ' + item.session_pitch + '...') : 'Loading...';
+  updateItemStatus();
   try {
     motion = await api('/api/motion?session_pitch=' + encodeURIComponent(item.session_pitch));
     currentFrame = 0;
+    document.getElementById('frameSlider').max = motion.frames.length - 1;
+    document.getElementById('frameSlider').value = 0;
     buildSkeleton();
     updateSkeleton();
     setView(currentView);
@@ -388,6 +413,12 @@ async function loadItem() {
 function nextItem() { if (idx < manifest.length - 1) { idx++; loadItem(); } }
 function prevItem() { if (idx > 0) { idx--; loadItem(); } }
 function togglePlay() { playing = !playing; }
+function seekFrame(frame) {
+  if (!motion) return;
+  currentFrame = parseInt(frame, 10);
+  playing = false;
+  updateSkeleton();
+}
 
 async function saveLabel(skipped) {
   const rater = document.getElementById('raterId').value.trim();
