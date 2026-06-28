@@ -19,7 +19,7 @@ Pitch and pitcher identifiers are hidden by default for blind labeling. Use
 
 ## Labels
 
-- `hip_shoulder_separation`: present, absent, unclear
+- `hip_shoulder_separation`: good, average, bad, unclear
 - `lower_body_dominance`: glute, quad, mixed, unclear
 - `direction`: good, bad, unclear
 - `shoulder_horizontal_abduction`: good, average, bad, unclear
@@ -51,3 +51,14 @@ D:\baseball\pitching\obp\baseball_pitching_env\Scripts\python.exe D:\baseball\pi
 
 The script reads source data from `baseball_pitching/data/` and writes only
 inside this experiment folder.
+
+## Patch Existing Labels
+
+To relabel only existing rows that need one updated field, run patch mode. It
+loads only rows whose current field value is outside the current allowed values
+and merges the new value back into the matching `labels.csv` row.
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'
+D:\baseball\pitching\obp\baseball_pitching_env\Scripts\python.exe D:\baseball\pitching\obp\experiments\qualitative_mechanics\qualitative_mechanics_experiment.py --patch-field hip_shoulder_separation
+```

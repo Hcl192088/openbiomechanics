@@ -63,6 +63,16 @@ LABEL_FIELDS = [
     "drift",
 ]
 
+FIELD_ALLOWED_VALUES = {
+    "hip_shoulder_separation": {"good", "average", "bad", "unclear"},
+    "lower_body_dominance": {"glute", "quad", "mixed", "unclear"},
+    "direction": {"good", "bad", "unclear"},
+    "shoulder_horizontal_abduction": {"good", "average", "bad", "unclear"},
+    "torso_velo_z": {"fast", "slow", "unclear"},
+    "heel_connection": {"connected", "early_extension", "unclear"},
+    "drift": {"good", "average", "bad", "unclear"},
+}
+
 LABEL_COLUMNS = [
     "saved_at_utc",
     "rater_id",
@@ -161,6 +171,34 @@ def ensure_labels_file() -> None:
     with LABELS_PATH.open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=LABEL_COLUMNS)
         writer.writeheader()
+
+
+def build_patch_manifest(base_manifest: list[dict[str, str]], patch_fields: list[str]) -> list[dict[str, str]]:
+    if not patch_fields:
+        return base_manifest
+    for field in patch_fields:
+        if field not in LABEL_FIELDS:
+            raise RuntimeError(f"Unsupported patch field: {field}")
+    labels = _read_csv_records(LABELS_PATH)
+    manifest_by_pitch = {row["session_pitch"]: row for row in base_manifest}
+    patch_rows = []
+    for row in labels:
+        needs_patch = False
+        for field in patch_fields:
+            value = row.get(field, "")
+            allowed = FIELD_ALLOWED_VALUES[field]
+            if value not in allowed:
+                needs_patch = True
+                break
+        if not needs_patch:
+            continue
+        manifest_row = manifest_by_pitch.get(row.get("session_pitch", ""))
+        if not manifest_row:
+            raise RuntimeError(f"Label row references pitch outside manifest: {row.get('session_pitch', '')}")
+        patch_rows.append({**manifest_row, "patch_rater_id": row.get("rater_id", "")})
+    if not patch_rows:
+        raise RuntimeError(f"No existing labels need patching for: {', '.join(patch_fields)}")
+    return patch_rows
 
 
 def load_motion_data(c3d_path: Path, frame_step: int) -> dict[str, object]:
@@ -268,7 +306,7 @@ textarea { min-height:64px; resize:vertical; }
       <span class="pill" id="frameText">0 / 0</span>
     </div>
     <form id="labelForm">
-      <label>Hip-shoulder separation<select name="hip_shoulder_separation"><option>unclear</option><option>present</option><option>absent</option></select></label>
+      <label>Hip-shoulder separation<select name="hip_shoulder_separation"><option>unclear</option><option>good</option><option>average</option><option>bad</option></select></label>
       <label>Glute / quad dominance<select name="lower_body_dominance"><option>unclear</option><option>glute</option><option>quad</option><option>mixed</option></select></label>
       <label>Direction<select name="direction"><option>unclear</option><option>good</option><option>bad</option></select></label>
       <label>Shoulder horizontal abduction<select name="shoulder_horizontal_abduction"><option>unclear</option><option>good</option><option>average</option><option>bad</option></select></label>
@@ -294,6 +332,7 @@ let motion = null;
 let scene, camera, renderer, controls, lines = [];
 let currentFrame = 0, playing = true, lastTime = 0, currentView = 'home';
 let revealIds = false;
+const PATCH_FIELDS = __PATCH_FIELDS__;
 
 async function api(path, opts) {
   const res = await fetch(path, opts);
@@ -381,7 +420,8 @@ function setView(view) {
 
 function updateItemStatus() {
   const item = manifest[idx] || {};
-  const base = `Item ${idx + 1}/${manifest.length}`;
+  const mode = PATCH_FIELDS.length ? `Patch ${PATCH_FIELDS.join(', ')} | ` : '';
+  const base = `${mode}Item ${idx + 1}/${manifest.length}`;
   const detail = revealIds ? ` | pitch ${item.session_pitch} | pitcher ${item.pitcher_id} | throws ${item.p_throws}` : '';
   document.getElementById('itemStatus').textContent = base + detail;
 }
@@ -396,6 +436,7 @@ async function loadItem() {
   document.getElementById('labelForm').reset();
   document.getElementById('loading').style.display = 'block';
   document.getElementById('loading').textContent = revealIds ? ('Loading ' + item.session_pitch + '...') : 'Loading...';
+  if (PATCH_FIELDS.length && item.patch_rater_id) document.getElementById('raterId').value = item.patch_rater_id;
   updateItemStatus();
   try {
     motion = await api('/api/motion?session_pitch=' + encodeURIComponent(item.session_pitch));
@@ -434,6 +475,7 @@ async function saveLabel(skipped) {
     view_used: currentView,
     playback_speed: document.getElementById('speed').value,
     skipped: skipped ? 'true' : 'false',
+    patch_fields: PATCH_FIELDS,
   });
   try {
     await api('/api/label', {method:'POST', body:JSON.stringify(payload)});
@@ -483,7 +525,8 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         if parsed.path == "/":
-            body = html_page().encode("utf-8")
+            html = html_page().replace("__PATCH_FIELDS__", json.dumps(_CFG.get("patch_fields", [])))
+            body = html.encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Cache-Control", "no-store")
@@ -520,6 +563,12 @@ class Handler(SimpleHTTPRequestHandler):
             if not item:
                 self._json({"error": "Label references a pitch outside the manifest."}, 400)
                 return
+            patch_fields = payload.get("patch_fields") or []
+            if patch_fields:
+                self._patch_existing_label(payload, patch_fields)
+                self._json({"ok": True, "patched": True})
+                return
+
             row = {col: "" for col in LABEL_COLUMNS}
             row.update({
                 "saved_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -540,6 +589,28 @@ class Handler(SimpleHTTPRequestHandler):
         except Exception as exc:
             self._json({"error": str(exc)}, 500)
 
+    def _patch_existing_label(self, payload: dict[str, object], patch_fields: list[str]) -> None:
+        for field in patch_fields:
+            if field not in LABEL_FIELDS:
+                raise RuntimeError(f"Unsupported patch field: {field}")
+        rows = _read_csv_records(LABELS_PATH)
+        session_pitch = str(payload.get("session_pitch", ""))
+        rater_id = str(payload.get("rater_id", ""))
+        matches = [idx for idx, row in enumerate(rows) if row.get("session_pitch") == session_pitch and row.get("rater_id") == rater_id]
+        if len(matches) != 1:
+            raise RuntimeError(f"Expected exactly one label row for rater={rater_id} session_pitch={session_pitch}, found {len(matches)}")
+        row = rows[matches[0]]
+        for field in patch_fields:
+            value = str(payload.get(field, ""))
+            if value not in FIELD_ALLOWED_VALUES[field]:
+                raise RuntimeError(f"Invalid value for {field}: {value}")
+            row[field] = value
+        row["saved_at_utc"] = datetime.now(timezone.utc).isoformat()
+        with LABELS_PATH.open("w", encoding="utf-8", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=LABEL_COLUMNS)
+            writer.writeheader()
+            writer.writerows(rows)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the qualitative mechanics labeling experiment.")
@@ -549,17 +620,20 @@ def main() -> None:
     parser.add_argument("--frame-step", type=int, default=1)
     parser.add_argument("--rebuild-manifest", action="store_true")
     parser.add_argument("--check-first-load", action="store_true")
+    parser.add_argument("--patch-field", action="append", default=[])
     parser.add_argument("--no-browser", action="store_true")
     args = parser.parse_args()
 
     os.environ.setdefault("PYTHONIOENCODING", "utf-8")
     EXPERIMENT_DIR.mkdir(parents=True, exist_ok=True)
-    manifest = ensure_manifest(args.seed, args.pitchers, args.pitches_per_pitcher, args.rebuild_manifest)
     ensure_labels_file()
+    base_manifest = ensure_manifest(args.seed, args.pitchers, args.pitches_per_pitcher, args.rebuild_manifest)
+    manifest = build_patch_manifest(base_manifest, args.patch_field)
 
     _CFG["manifest"] = manifest
     _CFG["c3d_map"] = {row["session_pitch"]: row for row in manifest}
     _CFG["frame_step"] = args.frame_step
+    _CFG["patch_fields"] = args.patch_field
 
     if args.check_first_load:
         first = manifest[0]
