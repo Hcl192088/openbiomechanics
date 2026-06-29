@@ -33,6 +33,9 @@
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th, td { border-bottom: 1px solid #e1e6ec; padding: 8px; text-align: left; }
     th { background: #f0f3f6; }
+    .field { border-top: 2px solid #d9dee5; margin-top: 22px; padding-top: 14px; }
+    .metric { border-left: 3px solid #d9dee5; margin: 14px 0 18px; padding-left: 12px; }
+    .metric h3 { font-size: 14px; margin: 0 0 8px; color: #52616f; }
     @media (max-width: 720px) {
       main { padding: 14px; }
       header, .grid, .task-meta { display: block; }
@@ -70,9 +73,17 @@
       <span id="passwordStatus" class="status"></span>
     </div>
   </section>
+  <section id="progressSection" class="hidden">
+    <h2>Progress</h2>
+    <div id="progressCards" class="task-meta"></div>
+  </section>
   <section id="dashboardSection" class="hidden">
-    <h2>Dashboard</h2>
-    <div id="dashboardCards" class="task-meta"></div>
+    <h2>Pilot Dashboard</h2>
+    <div class="actions" style="margin-bottom: 12px;">
+      <button type="button" class="secondary" id="refreshAnalysisBtn">Refresh results</button>
+      <span class="muted" id="refreshAnalysisStatus">Not loaded yet.</span>
+    </div>
+    <div id="pilotDashboard"></div>
   </section>
   <section id="taskSection" class="hidden">
     <h2>Current Task</h2>
@@ -276,7 +287,8 @@ async function loadPending() {
 }
 async function loadAnalysis() {
   const payload = await api("/api/analysis");
-  renderDashboard(payload.dashboard);
+  renderProgress(payload.dashboard);
+  renderPilotDashboard(payload.pilot_stats);
   const body = document.getElementById("analysisRows");
   body.replaceChildren();
   Object.entries(payload.item_summaries).forEach(([item, summary]) => {
@@ -292,8 +304,8 @@ async function loadAnalysis() {
   });
   show(document.getElementById("analysisSection"), true);
 }
-function renderDashboard(dashboard) {
-  const cards = document.getElementById("dashboardCards");
+function renderProgress(dashboard) {
+  const cards = document.getElementById("progressCards");
   cards.replaceChildren();
   [
     ["My completed tasks", `${dashboard.my_completed_tasks} / ${dashboard.total_tasks}`],
@@ -305,7 +317,51 @@ function renderDashboard(dashboard) {
     text(box, `${label}: ${value}`);
     cards.appendChild(box);
   });
+  show(document.getElementById("progressSection"), true);
+}
+function renderPilotDashboard(fields) {
+  const root = document.getElementById("pilotDashboard");
+  root.replaceChildren();
+  fields.forEach((field) => {
+    const section = document.createElement("section");
+    section.className = "field";
+    const title = document.createElement("h2");
+    text(title, field.field);
+    section.appendChild(title);
+    const note = document.createElement("div");
+    note.className = "muted";
+    text(note, field.enabled ? field.interpretation : `Hidden: ${field.gate_reason}`);
+    section.appendChild(note);
+    field.metrics.forEach((metric) => {
+      const block = document.createElement("div");
+      block.className = "metric";
+      const heading = document.createElement("h3");
+      text(heading, metric.metric);
+      block.appendChild(heading);
+      const tableEl = document.createElement("table");
+      tableEl.innerHTML = "<thead><tr><th>Group</th><th>n</th><th>mean</th><th>sd</th></tr></thead>";
+      const body = document.createElement("tbody");
+      metric.groups.forEach((group) => {
+        const row = document.createElement("tr");
+        [group.value, group.n, fmt(group.mean), fmt(group.sd)].forEach((value) => {
+          const cell = document.createElement("td");
+          text(cell, String(value ?? ""));
+          row.appendChild(cell);
+        });
+        body.appendChild(row);
+      });
+      tableEl.appendChild(body);
+      block.appendChild(tableEl);
+      section.appendChild(block);
+    });
+    root.appendChild(section);
+  });
+  text(document.getElementById("refreshAnalysisStatus"), `Last updated ${new Date().toLocaleTimeString()}`);
   show(document.getElementById("dashboardSection"), true);
+}
+function fmt(value) {
+  if (value === null || value === undefined) return "";
+  return typeof value === "number" ? value.toFixed(4).replace(/\.?0+$/, "") : String(value);
 }
 document.getElementById("loginBtn").addEventListener("click", async () => {
   try {
@@ -329,6 +385,14 @@ document.getElementById("passwordBtn").addEventListener("click", async () => {
     setStatus("loginStatus", "Password updated.");
   } catch (error) {
     setStatus("passwordStatus", error.message, false);
+  }
+});
+document.getElementById("refreshAnalysisBtn").addEventListener("click", async () => {
+  try {
+    text(document.getElementById("refreshAnalysisStatus"), "Refreshing...");
+    await loadAnalysis();
+  } catch (error) {
+    text(document.getElementById("refreshAnalysisStatus"), error.message);
   }
 });
 document.getElementById("playBtn").addEventListener("click", () => { playing = !playing; });

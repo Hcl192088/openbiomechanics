@@ -6,6 +6,7 @@ It keeps the local Python prototype separate and reimplements the same core API 
 
 - Cloudflare Worker for `/api/*`
 - Cloudflare D1 for coaches, sessions, tasks, and labels
+- Cloudflare D1 for the POI metrics needed by the pilot dashboard
 - Worker static assets for the HTML UI and motion JSON files
 
 ## Local preparation
@@ -62,6 +63,12 @@ npx wrangler deploy
 - Password: `0000`
 
 Both preview accounts are marked as requiring a password reset after login. This is only for preview testing. Before opening it to other coaches, use per-coach accounts with unique passwords and avoid sharing accounts.
+
+## Dashboard scope
+
+The `Pilot Dashboard` mirrors the original local `/dashboard` intent: qualitative label groups are joined to selected POI metrics and shown as group `n`, `mean`, and `sd`. Cloudflare Workers do not run the original SciPy tests, so the deployed dashboard currently omits p-values and treats the table as exploratory triage only.
+
+Pooled metric tables are shown only for items that pass the coach-agreement gate. Items below the agreement threshold remain listed with the gate reason.
 
 ## Current security notes
 

@@ -20,6 +20,75 @@ const FIELD_ALLOWED_VALUES = {
   drift: new Set(["good", "average", "bad", "unclear"]),
 };
 
+const FIELD_VALUE_ORDER = {
+  hip_shoulder_separation: ["good", "average", "bad", "unclear"],
+  lower_body_dominance: ["glute", "mixed", "quad", "unclear"],
+  direction: ["good", "bad", "unclear"],
+  shoulder_horizontal_abduction: ["good", "average", "bad", "unclear"],
+  torso_velo_z: ["fast", "slow", "unclear"],
+  hip_extension: ["good", "bad", "unclear"],
+  heel_connection: ["connected", "early_extension", "unclear"],
+  drift: ["good", "average", "bad", "unclear"],
+};
+
+const PILOT_FIELD_METRICS = {
+  hip_shoulder_separation: [
+    "pitch_speed_mph",
+    "max_rotation_hip_shoulder_separation",
+    "rotation_hip_shoulder_separation_fp",
+  ],
+  shoulder_horizontal_abduction: [
+    "pitch_speed_mph",
+    "shoulder_horizontal_abduction_fp",
+    "max_shoulder_horizontal_abduction",
+  ],
+  torso_velo_z: ["pitch_speed_mph", "max_torso_rotational_velo"],
+  hip_extension: [
+    "pitch_speed_mph",
+    "pelvis_rotation_fp",
+    "rotation_hip_shoulder_separation_fp",
+    "max_rotation_hip_shoulder_separation",
+    "max_torso_rotational_velo",
+    "cog_velo_pkh",
+    "stride_length",
+    "stride_angle",
+    "max_rear_hip_flexion",
+    "max_rear_hip_internal_rotation_velo",
+    "rear_hip_transfer_pkh_fp",
+    "rear_hip_generation_pkh_fp",
+    "rear_hip_absorption_pkh_fp",
+    "lead_hip_transfer_fp_br",
+    "lead_hip_generation_fp_br",
+    "lead_hip_absorption_fp_br",
+    "lead_knee_extension_from_fp_to_br",
+    "lead_knee_extension_angular_velo_fp",
+    "lead_grf_x_max",
+    "lead_grf_y_max",
+    "lead_grf_z_max",
+    "rear_grf_x_max",
+    "rear_grf_y_max",
+    "rear_grf_z_max",
+  ],
+  direction: ["pitch_speed_mph", "stride_length", "stride_angle", "max_cog_velo_x"],
+  heel_connection: [
+    "pitch_speed_mph",
+    "lead_knee_extension_from_fp_to_br",
+    "lead_knee_extension_angular_velo_fp",
+    "lead_grf_z_max",
+  ],
+  drift: ["pitch_speed_mph", "cog_velo_pkh", "max_cog_velo_x", "stride_angle"],
+};
+
+const PILOT_INTERPRETATION = {
+  hip_shoulder_separation: "Highest-priority validation candidate: visual groups align with direct hip-shoulder separation POI metrics and pitch speed.",
+  shoulder_horizontal_abduction: "Promising but sample-limited: direct shoulder horizontal abduction metrics move in the expected direction, but the bad group is small.",
+  torso_velo_z: "Visual fast/slow maps better to torso rotational velocity than to pitch speed.",
+  hip_extension: "Pilot-positive but indirect: good/bad groups separate on speed and several transfer/lead-leg metrics, but POI still lacks direct FP hip extension angles.",
+  direction: "Current good/bad rubric likely mixes open stride and cross-fire into one bad group; angle-based categories should be split before strong interpretation.",
+  heel_connection: "Contested label: pitch-speed separation should not be treated as a clean mechanism until the rubric is tightened and matched to POI metrics.",
+  drift: "More consistent with center-of-mass velocity at PKH than with max COM velocity or pitch speed.",
+};
+
 const AGREEMENT_THRESHOLD = 0.70;
 const MIN_SHARED_TASKS = 5;
 const MIN_COACHES = 2;
@@ -253,6 +322,57 @@ async function analysis(env, coachId) {
     min_coaches: MIN_COACHES,
     metric_columns: [],
     item_summaries: itemSummaries,
+    pilot_stats: await pilotStats(env, itemSummaries),
+  };
+}
+
+async function pilotStats(env, itemSummaries) {
+  const out = [];
+  for (const [field, metrics] of Object.entries(PILOT_FIELD_METRICS)) {
+    const agreement = itemSummaries[field]?.agreement;
+    const enabled = Boolean(agreement?.pooled_analysis_enabled);
+    const fieldOut = {
+      field,
+      interpretation: PILOT_INTERPRETATION[field] || "",
+      enabled,
+      gate_reason: agreement?.pooled_analysis_gate_reason || "no_labels",
+      metrics: [],
+    };
+    if (enabled) {
+      for (const metric of metrics) fieldOut.metrics.push(await groupedMetric(env, field, metric));
+    }
+    out.push(fieldOut);
+  }
+  return out;
+}
+
+async function groupedMetric(env, field, metric) {
+  const rows = await env.DB.prepare(
+    `SELECT l.label_value AS value, p.${metric} AS metric_value
+     FROM labels l
+     JOIN poi_metrics p ON p.session_pitch = l.session_pitch
+     WHERE l.item_name = ?
+       AND l.skipped = 0
+       AND l.label_value <> 'unclear'
+       AND p.${metric} IS NOT NULL`
+  ).bind(field).all();
+  const grouped = new Map();
+  for (const row of rows.results) {
+    if (!grouped.has(row.value)) grouped.set(row.value, []);
+    grouped.get(row.value).push(Number(row.metric_value));
+  }
+  const orderedValues = orderedFieldValues(field, [...grouped.keys()]);
+  return {
+    metric,
+    groups: orderedValues.map((value) => {
+      const values = grouped.get(value);
+      return {
+        value,
+        n: values.length,
+        mean: round(mean(values), 4),
+        sd: values.length > 1 ? round(sd(values), 4) : null,
+      };
+    }),
   };
 }
 
@@ -325,6 +445,30 @@ function itemAgreement(rows) {
     pooled_analysis_enabled: gateReason === "pass",
     pooled_analysis_gate_reason: gateReason,
   };
+}
+
+function orderedFieldValues(field, values) {
+  const preferred = FIELD_VALUE_ORDER[field] || [];
+  const seen = new Set(values);
+  const ordered = preferred.filter((value) => seen.has(value));
+  for (const value of values.sort()) {
+    if (!ordered.includes(value)) ordered.push(value);
+  }
+  return ordered;
+}
+
+function mean(values) {
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function sd(values) {
+  const avg = mean(values);
+  const variance = values.reduce((sum, value) => sum + ((value - avg) ** 2), 0) / (values.length - 1);
+  return Math.sqrt(variance);
+}
+
+function round(value, digits) {
+  return Math.round(value * (10 ** digits)) / (10 ** digits);
 }
 
 async function readObject(request) {

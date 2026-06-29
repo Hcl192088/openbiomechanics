@@ -24,6 +24,37 @@ CREATE TABLE label_tasks (
   active INTEGER NOT NULL
 );
 
+CREATE TABLE poi_metrics (
+  session_pitch TEXT PRIMARY KEY,
+  pitch_speed_mph REAL,
+  max_rotation_hip_shoulder_separation REAL,
+  rotation_hip_shoulder_separation_fp REAL,
+  shoulder_horizontal_abduction_fp REAL,
+  max_shoulder_horizontal_abduction REAL,
+  max_torso_rotational_velo REAL,
+  pelvis_rotation_fp REAL,
+  cog_velo_pkh REAL,
+  stride_length REAL,
+  stride_angle REAL,
+  max_rear_hip_flexion REAL,
+  max_rear_hip_internal_rotation_velo REAL,
+  rear_hip_transfer_pkh_fp REAL,
+  rear_hip_generation_pkh_fp REAL,
+  rear_hip_absorption_pkh_fp REAL,
+  lead_hip_transfer_fp_br REAL,
+  lead_hip_generation_fp_br REAL,
+  lead_hip_absorption_fp_br REAL,
+  lead_knee_extension_from_fp_to_br REAL,
+  lead_knee_extension_angular_velo_fp REAL,
+  lead_grf_x_max REAL,
+  lead_grf_y_max REAL,
+  lead_grf_z_max REAL,
+  rear_grf_x_max REAL,
+  rear_grf_y_max REAL,
+  rear_grf_z_max REAL,
+  max_cog_velo_x REAL
+);
+
 CREATE TABLE labels (
   coach_id TEXT NOT NULL,
   session_pitch TEXT NOT NULL,
