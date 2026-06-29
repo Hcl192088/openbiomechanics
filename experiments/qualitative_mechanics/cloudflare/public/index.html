@@ -94,6 +94,7 @@
       </div>
       <div class="actions" style="margin-top: 12px;">
         <button id="previousBtn" type="button" class="secondary" disabled>Previous task</button>
+        <button id="nextBtn" type="button" class="secondary" disabled>Next task</button>
         <button id="submitBtn" type="submit">Submit task</button>
         <span id="taskStatus" class="status"></span>
       </div>
@@ -117,7 +118,7 @@ const fieldLabels = {
   hip_extension: "Hip Extension Direction",
   direction: "Stride Direction",
 };
-let token = localStorage.getItem("qm_token") || "", tasks = [], currentTask = null, previousTasks = [];
+let token = localStorage.getItem("qm_token") || "", tasks = [], currentTask = null, previousTasks = [], nextTasks = [];
 let scene, camera, renderer, controls, lines = [], motion = null;
 let currentFrame = 0, playing = true, lastTime = 0, currentView = "home", threeReady = false;
 function text(el, value) { el.textContent = value; }
@@ -232,6 +233,10 @@ function setStatus(id, message, ok = true) {
   text(el, message);
   el.className = `status ${ok ? "ok" : "error"}`;
 }
+function updateNavButtons() {
+  document.getElementById("previousBtn").disabled = previousTasks.length === 0;
+  document.getElementById("nextBtn").disabled = nextTasks.length === 0;
+}
 function renderTask(task, saved = null) {
   currentTask = task || null;
   const meta = document.getElementById("taskMeta"), fields = document.getElementById("labelFields");
@@ -242,11 +247,11 @@ function renderTask(task, saved = null) {
     text(done, "No pending tasks.");
     meta.appendChild(done);
     document.getElementById("submitBtn").disabled = true;
-    document.getElementById("previousBtn").disabled = previousTasks.length === 0;
+    updateNavButtons();
     return;
   }
   document.getElementById("submitBtn").disabled = false;
-  document.getElementById("previousBtn").disabled = previousTasks.length === 0;
+  updateNavButtons();
   const box = document.createElement("div");
   text(box, `Task: ${task.display_order}`);
   meta.appendChild(box);
@@ -276,6 +281,12 @@ async function loadPending() {
   tasks = payload.tasks;
   renderTask(tasks[0]);
   setStatus("taskStatus", `${tasks.length} pending tasks.`);
+}
+function readCurrentSaved() {
+  if (!currentTask) return null;
+  const labels = {};
+  currentTask.active_label_fields.forEach((field) => { labels[field] = document.getElementById(`field_${field}`).value; });
+  return { task: currentTask, labels, playbackSpeed: document.getElementById("playbackSpeed").value };
 }
 document.getElementById("loginBtn").addEventListener("click", async () => {
   try {
@@ -314,8 +325,18 @@ document.getElementById("dashboardBtn").addEventListener("click", () => window.o
 document.getElementById("previousBtn").addEventListener("click", () => {
   const previous = previousTasks.pop();
   if (!previous) return;
+  const current = readCurrentSaved();
+  if (current) nextTasks.push(current);
   renderTask(previous.task, previous);
   setStatus("taskStatus", "Loaded previous task. Submit again to overwrite your saved labels.");
+});
+document.getElementById("nextBtn").addEventListener("click", () => {
+  const next = nextTasks.pop();
+  if (!next) return;
+  const current = readCurrentSaved();
+  if (current) previousTasks.push(current);
+  renderTask(next.task, next);
+  setStatus("taskStatus", "Loaded next task.");
 });
 document.getElementById("playBtn").addEventListener("click", () => { playing = !playing; });
 document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
@@ -334,6 +355,7 @@ document.getElementById("labelForm").addEventListener("submit", async (event) =>
   try {
     const payload = await api("/api/labels", {method: "POST", body: JSON.stringify({session_pitch: currentTask.session_pitch, playback_speed: playbackSpeed, labels})});
     previousTasks.push({ task: currentTask, labels: {...labels}, playbackSpeed });
+    nextTasks = [];
     setStatus("taskStatus", `Saved ${payload.saved_labels} labels. Pending: ${payload.pending_after}.`);
     await loadPending();
   } catch (error) {
