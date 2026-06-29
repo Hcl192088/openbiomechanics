@@ -276,11 +276,13 @@ function renderTask(task, saved = null) {
   if (saved?.playbackSpeed) document.getElementById("playbackSpeed").value = saved.playbackSpeed;
   loadMotion(task);
 }
-async function loadPending() {
-  const payload = await api("/api/pending");
-  tasks = payload.tasks;
+async function loadTasks() {
+  const [pendingPayload, completedPayload] = await Promise.all([api("/api/pending"), api("/api/completed")]);
+  tasks = pendingPayload.tasks;
+  previousTasks = completedPayload.tasks;
+  nextTasks = [];
   renderTask(tasks[0]);
-  setStatus("taskStatus", `${tasks.length} pending tasks.`);
+  setStatus("taskStatus", `${tasks.length} pending tasks. ${previousTasks.length} completed tasks available in Previous.`);
 }
 function readCurrentSaved() {
   if (!currentTask) return null;
@@ -297,7 +299,7 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
     show(document.getElementById("loginSection"), false);
     show(document.getElementById("passwordSection"), payload.must_change_password);
     show(document.getElementById("taskSection"), true);
-    await loadPending();
+    await loadTasks();
   } catch (error) {
     setStatus("loginStatus", error.message, false);
   }
@@ -356,8 +358,8 @@ document.getElementById("labelForm").addEventListener("submit", async (event) =>
     const payload = await api("/api/labels", {method: "POST", body: JSON.stringify({session_pitch: currentTask.session_pitch, playback_speed: playbackSpeed, labels})});
     previousTasks.push({ task: currentTask, labels: {...labels}, playbackSpeed });
     nextTasks = [];
+    await loadTasks();
     setStatus("taskStatus", `Saved ${payload.saved_labels} labels. Pending: ${payload.pending_after}.`);
-    await loadPending();
   } catch (error) {
     setStatus("taskStatus", error.message, false);
   }
@@ -365,7 +367,7 @@ document.getElementById("labelForm").addEventListener("submit", async (event) =>
 if (token) {
   show(document.getElementById("loginSection"), false);
   show(document.getElementById("taskSection"), true);
-  loadPending().catch((error) => {
+  loadTasks().catch((error) => {
     localStorage.removeItem("qm_token");
     token = "";
     show(document.getElementById("loginSection"), true);

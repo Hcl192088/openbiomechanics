@@ -111,6 +111,10 @@ export default {
         const coachId = await requireSession(request, env);
         return json({ tasks: await pendingTasks(env, coachId) });
       }
+      if (url.pathname === "/api/completed" && request.method === "GET") {
+        const coachId = await requireSession(request, env);
+        return json({ tasks: await completedTasks(env, coachId) });
+      }
       if (url.pathname === "/api/labels" && request.method === "POST") {
         const coachId = await requireSession(request, env);
         return json(await saveLabels(request, env, coachId));
@@ -220,6 +224,43 @@ async function pendingTasks(env, coachId) {
     p_throws: row.p_throws,
     active_label_fields: String(row.active_label_fields).split(";"),
   }));
+}
+
+async function completedTasks(env, coachId) {
+  const rows = await env.DB.prepare(
+    `SELECT t.*, l.item_name, l.label_value, l.playback_speed
+     FROM label_tasks t
+     JOIN labels l
+       ON l.session_pitch = t.session_pitch
+      AND l.coach_id = ?
+     WHERE t.active = 1
+       AND t.session_pitch IN (
+         SELECT session_pitch
+         FROM labels
+         WHERE coach_id = ?
+         GROUP BY session_pitch
+         HAVING COUNT(DISTINCT item_name) = ?
+       )
+     ORDER BY t.display_order, l.item_name`
+  ).bind(coachId, coachId, ACTIVE_LABEL_FIELDS.length).all();
+  const byPitch = new Map();
+  for (const row of rows.results) {
+    if (!byPitch.has(row.session_pitch)) {
+      byPitch.set(row.session_pitch, {
+        task: {
+          task_id: row.id,
+          display_order: row.display_order,
+          session_pitch: row.session_pitch,
+          p_throws: row.p_throws,
+          active_label_fields: String(row.active_label_fields).split(";"),
+        },
+        labels: {},
+        playbackSpeed: row.playback_speed,
+      });
+    }
+    byPitch.get(row.session_pitch).labels[row.item_name] = row.label_value;
+  }
+  return [...byPitch.values()];
 }
 
 async function saveLabels(request, env, coachId) {
