@@ -39,7 +39,7 @@ SKELETON_CONNECTIONS = [
     ("LASI", "LPSI"), ("RASI", "RPSI"), ("LPSI", "RPSI"),
     ("C7", "RBAK"), ("LFHD", "RFHD"), ("LBHD", "RBHD"),
     ("LFHD", "LBHD"), ("RFHD", "RBHD"),
-    ("CLAV", "RSHO"), ("RSHO", "RUPA"), ("RUPA", "RELB"),
+    ("CLAV", "RSHO"), ("RSHO", "LSHO"), ("RSHO", "RUPA"), ("RUPA", "RELB"),
     ("RELB", "RMELB"), ("RMELB", "RFRM"), ("RFRM", "RWRA"),
     ("RFRM", "RWRB"), ("RWRA", "RWRB"), ("RWRA", "RFIN"),
     ("CLAV", "LSHO"), ("LSHO", "LUPA"), ("LUPA", "LELB"),
