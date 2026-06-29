@@ -250,6 +250,18 @@ Success check:
   rule chosen before coding.
 - completed tasks no longer appear as pending for that coach.
 
+Current implementation:
+
+- `local_label_db.py --init` rebuilds local SQLite from `label_tasks.csv` and
+  `labels_long.csv`.
+- `local_label_db.py --smoke-test` checks login, pending task count, one-row
+  label insert, duplicate insert blocking, and pitch-level completion.
+- Current rule: one pitch-level task is complete only after all 8 active label
+  fields exist for that coach and `session_pitch`.
+- Current verified seed state: coach `1` has 30 completed pitch-level tasks and
+  28 pending tasks; adding one item row keeps the task pending; completing all
+  8 fields removes that task from pending.
+
 ### Step 5 - Add Minimal Analysis Page
 
 Compute agreement and pooled metric summaries from the local database.
