@@ -89,9 +89,6 @@ const PILOT_INTERPRETATION = {
   drift: "More consistent with center-of-mass velocity at PKH than with max COM velocity or pitch speed.",
 };
 
-const AGREEMENT_THRESHOLD = 0.70;
-const MIN_SHARED_TASKS = 5;
-const MIN_COACHES = 2;
 const MAX_WORKERS_PBKDF2_ITERATIONS = 100000;
 const MAX_JSON_BODY_BYTES = 16 * 1024;
 const MAX_NAME_LENGTH = 64;
@@ -302,63 +299,43 @@ async function motion(request, env) {
 }
 
 async function analysis(env, coachId) {
-  const rows = await env.DB.prepare(
-    "SELECT coach_id, session_pitch, item_name, label_value, skipped FROM labels ORDER BY item_name, session_pitch, coach_id"
-  ).all();
-  if (!rows.results.length) throw httpError("No labels in database.", 400);
-  const byItem = new Map();
-  for (const row of rows.results) {
-    if (!byItem.has(row.item_name)) byItem.set(row.item_name, []);
-    byItem.get(row.item_name).push(row);
-  }
-  const itemSummaries = {};
-  for (const [itemName, itemRows] of [...byItem.entries()].sort()) {
-    itemSummaries[itemName] = {
-      agreement: itemAgreement(itemRows),
-      pooled_metric_summary: null,
-    };
-  }
   return {
     dashboard: await dashboardStats(env, coachId),
-    agreement_threshold: AGREEMENT_THRESHOLD,
-    min_shared_tasks: MIN_SHARED_TASKS,
-    min_coaches: MIN_COACHES,
     metric_columns: [],
-    item_summaries: itemSummaries,
-    pilot_stats: await pilotStats(env, itemSummaries),
+    my_stats: await pilotStats(env, coachId),
+    all_stats: await pilotStats(env),
   };
 }
 
-async function pilotStats(env, itemSummaries) {
+async function pilotStats(env, coachId = null) {
   const out = [];
   for (const [field, metrics] of Object.entries(PILOT_FIELD_METRICS)) {
-    const agreement = itemSummaries[field]?.agreement;
-    const enabled = Boolean(agreement?.pooled_analysis_enabled);
     const fieldOut = {
       field,
       interpretation: PILOT_INTERPRETATION[field] || "",
-      enabled,
-      gate_reason: agreement?.pooled_analysis_gate_reason || "no_labels",
       metrics: [],
     };
-    if (enabled) {
-      for (const metric of metrics) fieldOut.metrics.push(await groupedMetric(env, field, metric));
-    }
+    for (const metric of metrics) fieldOut.metrics.push(await groupedMetric(env, field, metric, coachId));
     out.push(fieldOut);
   }
   return out;
 }
 
-async function groupedMetric(env, field, metric) {
-  const rows = await env.DB.prepare(
+async function groupedMetric(env, field, metric, coachId = null) {
+  let query =
     `SELECT l.label_value AS value, p.${metric} AS metric_value
      FROM labels l
      JOIN poi_metrics p ON p.session_pitch = l.session_pitch
      WHERE l.item_name = ?
        AND l.skipped = 0
        AND l.label_value <> 'unclear'
-       AND p.${metric} IS NOT NULL`
-  ).bind(field).all();
+       AND p.${metric} IS NOT NULL`;
+  const params = [field];
+  if (coachId !== null) {
+    query += " AND l.coach_id = ?";
+    params.push(coachId);
+  }
+  const rows = await env.DB.prepare(query).bind(...params).all();
   const grouped = new Map();
   for (const row of rows.results) {
     if (!grouped.has(row.value)) grouped.set(row.value, []);
@@ -407,52 +384,6 @@ async function dashboardStats(env, coachId) {
     my_pending_tasks: Number(totalTasks.n) - Number(myCompleted.n),
     total_labels: Number(totalLabels.n),
     coach_count: Number(coachCount.n),
-  };
-}
-
-function itemAgreement(rows) {
-  const coaches = new Set(rows.map((row) => row.coach_id));
-  const unclearCount = rows.filter((row) => row.label_value === "unclear").length;
-  const skippedCount = rows.filter((row) => Number(row.skipped)).length;
-  const byPitch = new Map();
-  for (const row of rows) {
-    if (Number(row.skipped)) continue;
-    if (!byPitch.has(row.session_pitch)) byPitch.set(row.session_pitch, new Map());
-    byPitch.get(row.session_pitch).set(row.coach_id, row.label_value);
-  }
-  let comparedPairs = 0;
-  let exactMatches = 0;
-  let sharedTasks = 0;
-  for (const coachLabels of byPitch.values()) {
-    const pitchCoaches = [...coachLabels.keys()].sort();
-    if (pitchCoaches.length < 2) continue;
-    sharedTasks += 1;
-    for (let i = 0; i < pitchCoaches.length; i += 1) {
-      for (let j = i + 1; j < pitchCoaches.length; j += 1) {
-        comparedPairs += 1;
-        if (coachLabels.get(pitchCoaches[i]) === coachLabels.get(pitchCoaches[j])) {
-          exactMatches += 1;
-        }
-      }
-    }
-  }
-  const exactAgreementRate = comparedPairs === 0 ? null : exactMatches / comparedPairs;
-  let gateReason = "pass";
-  if (coaches.size < MIN_COACHES) gateReason = "fewer_than_two_coaches";
-  else if (sharedTasks < MIN_SHARED_TASKS) gateReason = "not_enough_shared_tasks";
-  else if (exactAgreementRate === null || exactAgreementRate < AGREEMENT_THRESHOLD) {
-    gateReason = "below_agreement_threshold";
-  }
-  return {
-    coach_count: coaches.size,
-    shared_tasks: sharedTasks,
-    compared_pairs: comparedPairs,
-    exact_matches: exactMatches,
-    exact_agreement_rate: exactAgreementRate,
-    unclear_count: unclearCount,
-    skipped_count: skippedCount,
-    pooled_analysis_enabled: gateReason === "pass",
-    pooled_analysis_gate_reason: gateReason,
   };
 }
 
