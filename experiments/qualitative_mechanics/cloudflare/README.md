@@ -66,9 +66,17 @@ Both preview accounts are marked as requiring a password reset after login. This
 
 ## Dashboard scope
 
-The `Pilot Dashboard` mirrors the original local `/dashboard` intent: qualitative label groups are joined to selected POI metrics and shown as group `n`, `mean`, and `sd`. Cloudflare Workers do not run the original SciPy tests, so the deployed dashboard currently omits p-values and treats the table as exploratory triage only.
+The `Pilot Dashboard` mirrors the original local `/dashboard` intent: qualitative label groups are joined to selected POI metrics and shown as group `n`, `mean`, and `sd`. For metrics with exactly two label groups, the Worker also reports Welch p-value, t, df, mean difference, and Cohen d.
 
 Pooled metric tables are shown only for items that pass the coach-agreement gate. Items below the agreement threshold remain listed with the gate reason.
+
+Validate the Worker Welch approximation against SciPy with:
+
+```powershell
+& 'D:\baseball\pitching\obp\baseball_pitching_env\Scripts\python.exe' .\scripts\validate_welch_against_scipy.py
+```
+
+The validation uses local `labels_long.csv` and `baseball_pitching/data/poi/poi_metrics.csv`.
 
 ## Current security notes
 

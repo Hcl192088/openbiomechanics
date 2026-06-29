@@ -362,17 +362,23 @@ async function groupedMetric(env, field, metric) {
     grouped.get(row.value).push(Number(row.metric_value));
   }
   const orderedValues = orderedFieldValues(field, [...grouped.keys()]);
-  return {
-    metric,
-    groups: orderedValues.map((value) => {
-      const values = grouped.get(value);
-      return {
+  const groups = orderedValues.map((value) => {
+    const values = grouped.get(value);
+    return {
+      value,
+      values,
+      summary: {
         value,
         n: values.length,
         mean: round(mean(values), 4),
         sd: values.length > 1 ? round(sd(values), 4) : null,
-      };
-    }),
+      },
+    };
+  });
+  return {
+    metric,
+    groups: groups.map((group) => group.summary),
+    tests: groups.length === 2 ? welchSummary(groups[0], groups[1]) : null,
   };
 }
 
@@ -469,6 +475,128 @@ function sd(values) {
 
 function round(value, digits) {
   return Math.round(value * (10 ** digits)) / (10 ** digits);
+}
+
+function welchSummary(leftGroup, rightGroup) {
+  const left = leftGroup.values;
+  const right = rightGroup.values;
+  if (left.length < 2 || right.length < 2) {
+    return {
+      test: "welch",
+      comparison: `${leftGroup.value}-${rightGroup.value}`,
+      reason: "need_at_least_two_values_per_group",
+    };
+  }
+  const leftMean = mean(left);
+  const rightMean = mean(right);
+  const leftVar = variance(left);
+  const rightVar = variance(right);
+  const seSquared = (leftVar / left.length) + (rightVar / right.length);
+  if (seSquared <= 0) {
+    return {
+      test: "welch",
+      comparison: `${leftGroup.value}-${rightGroup.value}`,
+      reason: "zero_standard_error",
+    };
+  }
+  const t = (leftMean - rightMean) / Math.sqrt(seSquared);
+  const numerator = seSquared ** 2;
+  const denominator = ((leftVar / left.length) ** 2 / (left.length - 1)) + ((rightVar / right.length) ** 2 / (right.length - 1));
+  const df = numerator / denominator;
+  const p = 2 * (1 - studentTCdf(Math.abs(t), df));
+  return {
+    test: "welch",
+    comparison: `${leftGroup.value}-${rightGroup.value}`,
+    t: round(t, 4),
+    df: round(df, 4),
+    p: round(Math.max(0, Math.min(1, p)), 4),
+    mean_diff: round(leftMean - rightMean, 4),
+    cohen_d: round(cohenD(left, right), 4),
+  };
+}
+
+function variance(values) {
+  const avg = mean(values);
+  return values.reduce((sum, value) => sum + ((value - avg) ** 2), 0) / (values.length - 1);
+}
+
+function cohenD(left, right) {
+  const pooled = (((left.length - 1) * variance(left)) + ((right.length - 1) * variance(right))) / (left.length + right.length - 2);
+  return pooled > 0 ? (mean(left) - mean(right)) / Math.sqrt(pooled) : null;
+}
+
+function studentTCdf(t, df) {
+  if (df <= 0) return NaN;
+  const x = df / (df + (t * t));
+  const ib = regularizedIncompleteBeta(x, df / 2, 0.5);
+  return 1 - (0.5 * ib);
+}
+
+function regularizedIncompleteBeta(x, a, b) {
+  if (x <= 0) return 0;
+  if (x >= 1) return 1;
+  const bt = Math.exp(logGamma(a + b) - logGamma(a) - logGamma(b) + (a * Math.log(x)) + (b * Math.log(1 - x)));
+  if (x < (a + 1) / (a + b + 2)) {
+    return (bt * betaContinuedFraction(x, a, b)) / a;
+  }
+  return 1 - ((bt * betaContinuedFraction(1 - x, b, a)) / b);
+}
+
+function betaContinuedFraction(x, a, b) {
+  const maxIterations = 100;
+  const epsilon = 3e-7;
+  const fpMin = 1e-30;
+  let qab = a + b;
+  let qap = a + 1;
+  let qam = a - 1;
+  let c = 1;
+  let d = 1 - (qab * x / qap);
+  if (Math.abs(d) < fpMin) d = fpMin;
+  d = 1 / d;
+  let h = d;
+  for (let m = 1; m <= maxIterations; m += 1) {
+    const m2 = 2 * m;
+    let aa = (m * (b - m) * x) / ((qam + m2) * (a + m2));
+    d = 1 + (aa * d);
+    if (Math.abs(d) < fpMin) d = fpMin;
+    c = 1 + (aa / c);
+    if (Math.abs(c) < fpMin) c = fpMin;
+    d = 1 / d;
+    h *= d * c;
+    aa = -((a + m) * (qab + m) * x) / ((a + m2) * (qap + m2));
+    d = 1 + (aa * d);
+    if (Math.abs(d) < fpMin) d = fpMin;
+    c = 1 + (aa / c);
+    if (Math.abs(c) < fpMin) c = fpMin;
+    d = 1 / d;
+    const del = d * c;
+    h *= del;
+    if (Math.abs(del - 1) < epsilon) break;
+  }
+  return h;
+}
+
+function logGamma(value) {
+  const coefficients = [
+    676.5203681218851,
+    -1259.1392167224028,
+    771.3234287776531,
+    -176.6150291621406,
+    12.507343278686905,
+    -0.13857109526572012,
+    9.984369578019572e-6,
+    1.5056327351493116e-7,
+  ];
+  if (value < 0.5) {
+    return Math.log(Math.PI) - Math.log(Math.sin(Math.PI * value)) - logGamma(1 - value);
+  }
+  let x = 0.9999999999998099;
+  const z = value - 1;
+  for (let i = 0; i < coefficients.length; i += 1) {
+    x += coefficients[i] / (z + i + 1);
+  }
+  const t = z + coefficients.length - 0.5;
+  return (0.5 * Math.log(2 * Math.PI)) + ((z + 0.5) * Math.log(t)) - t + Math.log(x);
 }
 
 async function readObject(request) {

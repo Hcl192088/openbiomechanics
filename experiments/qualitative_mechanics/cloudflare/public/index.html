@@ -352,6 +352,16 @@ function renderPilotDashboard(fields) {
       });
       tableEl.appendChild(body);
       block.appendChild(tableEl);
+      if (metric.tests) {
+        const tests = document.createElement("div");
+        tests.className = "muted";
+        if (metric.tests.reason) {
+          text(tests, `Welch: ${metric.tests.reason}`);
+        } else {
+          text(tests, `Welch ${metric.tests.comparison}: p=${fmt(metric.tests.p)}, t=${fmt(metric.tests.t)}, df=${fmt(metric.tests.df)}, mean diff=${fmt(metric.tests.mean_diff)}, Cohen d=${fmt(metric.tests.cohen_d)}`);
+        }
+        block.appendChild(tests);
+      }
       section.appendChild(block);
     });
     root.appendChild(section);
