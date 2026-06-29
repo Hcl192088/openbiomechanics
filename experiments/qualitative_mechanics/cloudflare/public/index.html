@@ -48,22 +48,25 @@
   <section id="loginSection">
     <h2>Login</h2>
     <div class="grid">
-      <div><label for="name">Coach name</label><input id="name" value="hcl" maxlength="64" autocomplete="username"></div>
-      <div><label for="password">Password</label><input id="password" type="password" value="0000" maxlength="128" autocomplete="current-password"></div>
+      <div><label for="name">Coach name</label><input id="name" maxlength="64" autocomplete="username"></div>
+      <div><label for="password">Password</label><input id="password" type="password" maxlength="128" autocomplete="current-password"></div>
     </div>
     <div class="actions" style="margin-top: 12px;">
       <button id="loginBtn">Login</button>
+      <button type="button" class="secondary" data-toggle-password="password">Show password</button>
       <span id="loginStatus" class="status"></span>
     </div>
   </section>
   <section id="passwordSection" class="hidden">
     <h2>Reset Password</h2>
     <div class="grid">
-      <div><label for="currentPassword">Current password</label><input id="currentPassword" type="password" value="0000" maxlength="128" autocomplete="current-password"></div>
+      <div><label for="currentPassword">Current password</label><input id="currentPassword" type="password" maxlength="128" autocomplete="current-password"></div>
       <div><label for="newPassword">New password</label><input id="newPassword" type="password" maxlength="128" autocomplete="new-password"></div>
     </div>
     <div class="actions" style="margin-top: 12px;">
       <button id="passwordBtn">Save password</button>
+      <button type="button" class="secondary" data-toggle-password="currentPassword">Show current</button>
+      <button type="button" class="secondary" data-toggle-password="newPassword">Show new</button>
       <span id="passwordStatus" class="status"></span>
     </div>
   </section>
@@ -109,7 +112,7 @@ const allowedValues = {
   heel_connection: ["connected", "early_extension", "unclear"],
   drift: ["good", "average", "bad", "unclear"]
 };
-let token = "", tasks = [], currentTask = null;
+let token = localStorage.getItem("qm_token") || "", tasks = [], currentTask = null;
 let scene, camera, renderer, controls, lines = [], motion = null;
 let currentFrame = 0, playing = true, lastTime = 0, currentView = "home", threeReady = false;
 function text(el, value) { el.textContent = value; }
@@ -268,14 +271,23 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
   try {
     const payload = await api("/api/login", {method: "POST", body: JSON.stringify({name: document.getElementById("name").value, password: document.getElementById("password").value})});
     token = payload.token;
-    sessionStorage.setItem("qm_token", token);
+    localStorage.setItem("qm_token", token);
     setStatus("loginStatus", `Logged in as ${payload.coach_name}.`);
+    show(document.getElementById("loginSection"), false);
     show(document.getElementById("passwordSection"), payload.must_change_password);
     show(document.getElementById("taskSection"), true);
     await loadPending();
   } catch (error) {
     setStatus("loginStatus", error.message, false);
   }
+});
+document.querySelectorAll("[data-toggle-password]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const input = document.getElementById(button.dataset.togglePassword);
+    const showing = input.type === "text";
+    input.type = showing ? "password" : "text";
+    text(button, showing ? button.textContent.replace("Hide", "Show") : button.textContent.replace("Show", "Hide"));
+  });
 });
 document.getElementById("passwordBtn").addEventListener("click", async () => {
   try {
@@ -310,6 +322,17 @@ document.getElementById("labelForm").addEventListener("submit", async (event) =>
     setStatus("taskStatus", error.message, false);
   }
 });
+if (token) {
+  show(document.getElementById("loginSection"), false);
+  show(document.getElementById("taskSection"), true);
+  loadPending().catch((error) => {
+    localStorage.removeItem("qm_token");
+    token = "";
+    show(document.getElementById("loginSection"), true);
+    show(document.getElementById("taskSection"), false);
+    setStatus("loginStatus", error.message, false);
+  });
+}
 </script>
 </body>
 </html>

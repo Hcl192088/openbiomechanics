@@ -42,7 +42,7 @@
   <div id="allFields"></div>
 </main>
 <script>
-let token = sessionStorage.getItem("qm_token") || "";
+let token = localStorage.getItem("qm_token") || "";
 function text(el, value) { el.textContent = value; }
 function fmt(value) {
   if (value === null || value === undefined) return "";
@@ -111,6 +111,7 @@ async function refresh() {
 }
 document.getElementById("refreshBtn").addEventListener("click", refresh);
 document.getElementById("labelingBtn").addEventListener("click", () => window.location.href = "/");
+refresh();
 </script>
 </body>
 </html>
