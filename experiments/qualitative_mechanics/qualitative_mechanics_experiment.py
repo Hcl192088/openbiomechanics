@@ -59,6 +59,7 @@ LABEL_FIELDS = [
     "direction",
     "shoulder_horizontal_abduction",
     "torso_velo_z",
+    "hip_extension",
     "heel_connection",
     "drift",
 ]
@@ -69,6 +70,7 @@ FIELD_ALLOWED_VALUES = {
     "direction": {"good", "bad", "unclear"},
     "shoulder_horizontal_abduction": {"good", "average", "bad", "unclear"},
     "torso_velo_z": {"fast", "slow", "unclear"},
+    "hip_extension": {"good", "bad", "unclear"},
     "heel_connection": {"connected", "early_extension", "unclear"},
     "drift": {"good", "average", "bad", "unclear"},
 }
@@ -166,11 +168,25 @@ def ensure_manifest(seed: int, pitchers: int, pitches_per_pitcher: int, rebuild:
 
 
 def ensure_labels_file() -> None:
-    if LABELS_PATH.exists():
+    if not LABELS_PATH.exists():
+        with LABELS_PATH.open("w", encoding="utf-8", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=LABEL_COLUMNS)
+            writer.writeheader()
         return
+
+    with LABELS_PATH.open("r", encoding="utf-8-sig", newline="") as f:
+        reader = csv.DictReader(f)
+        existing_fields = reader.fieldnames or []
+        rows = list(reader)
+    if existing_fields == LABEL_COLUMNS:
+        return
+    extra_fields = [field for field in existing_fields if field not in LABEL_COLUMNS]
+    output_fields = [*LABEL_COLUMNS, *extra_fields]
     with LABELS_PATH.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=LABEL_COLUMNS)
+        writer = csv.DictWriter(f, fieldnames=output_fields)
         writer.writeheader()
+        for row in rows:
+            writer.writerow({field: row.get(field, "") for field in output_fields})
 
 
 def build_patch_manifest(base_manifest: list[dict[str, str]], patch_fields: list[str]) -> list[dict[str, str]]:
@@ -311,6 +327,7 @@ textarea { min-height:64px; resize:vertical; }
       <label>Direction<select name="direction"><option>unclear</option><option>good</option><option>bad</option></select></label>
       <label>Shoulder horizontal abduction<select name="shoulder_horizontal_abduction"><option>unclear</option><option>good</option><option>average</option><option>bad</option></select></label>
       <label>Torso Velo Z<select name="torso_velo_z"><option>unclear</option><option>fast</option><option>slow</option></select></label>
+      <label>Hip Extension<select name="hip_extension"><option>unclear</option><option>good</option><option>bad</option></select></label>
       <label>Heel connection<select name="heel_connection"><option>unclear</option><option>connected</option><option>early_extension</option></select></label>
       <label>Drift<select name="drift"><option>unclear</option><option>good</option><option>average</option><option>bad</option></select></label>
       <label>Skip reason<input name="skip_reason" placeholder="only when skipped"></label>

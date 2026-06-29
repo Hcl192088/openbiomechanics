@@ -24,6 +24,7 @@ Pitch and pitcher identifiers are hidden by default for blind labeling. Use
 - `direction`: good, bad, unclear
 - `shoulder_horizontal_abduction`: good, average, bad, unclear
 - `torso_velo_z`: fast, slow, unclear
+- `hip_extension`: good, bad, unclear
 - `heel_connection`: connected, early_extension, unclear
 - `drift`: good, average, bad, unclear
 
