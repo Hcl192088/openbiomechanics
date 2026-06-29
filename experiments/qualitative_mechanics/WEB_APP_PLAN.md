@@ -296,6 +296,17 @@ Success check:
 - GitHub repository contains code only, not production secrets or raw private
   labels.
 
+Local API checkpoint before deployment:
+
+- `local_label_api.py --smoke-test` starts a local HTTP server thread and tests
+  login, pending tasks, full pitch-level label save, duplicate save blocking,
+  and analysis summary retrieval.
+- Current API save rule: `/api/labels` accepts one complete pitch-level task at
+  a time and requires all 8 active label fields.
+- Current verified API state: login returns 200, pending starts at 28, one
+  complete save inserts 8 label rows and reduces pending to 27, duplicate save
+  returns 409, analysis returns 8 item summaries.
+
 ## Explicit Non-Goals For Now
 
 - Full athlete-management system.
