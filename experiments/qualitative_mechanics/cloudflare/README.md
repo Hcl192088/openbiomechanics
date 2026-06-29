@@ -22,6 +22,8 @@ npm run check
 
 `seed.sql` and `public/web_motion/` are generated deployment artifacts and are intentionally git-ignored.
 
+If login fails with a PBKDF2 iteration-count error, rebuild `seed.sql` with the current script and rerun both D1 commands below. Cloudflare Workers support up to 100,000 PBKDF2 iterations, so the Cloudflare preview seed intentionally uses 100,000 instead of the local Python prototype's 200,000.
+
 ## Cloudflare setup
 
 Create the D1 database:

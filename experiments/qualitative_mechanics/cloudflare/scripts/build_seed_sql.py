@@ -15,6 +15,7 @@ EXPERIMENT_DIR = CLOUDFLARE_DIR.parent
 TASKS_PATH = EXPERIMENT_DIR / "label_tasks.csv"
 LABELS_LONG_PATH = EXPERIMENT_DIR / "labels_long.csv"
 OUTPUT_PATH = CLOUDFLARE_DIR / "seed.sql"
+PBKDF2_ITERATIONS = 100_000
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
@@ -32,8 +33,8 @@ def sql_string(value: str) -> str:
 
 
 def hash_password(password: str, salt: str) -> str:
-    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 200_000)
-    return f"pbkdf2_sha256$200000${salt}${digest.hex()}"
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), PBKDF2_ITERATIONS)
+    return f"pbkdf2_sha256${PBKDF2_ITERATIONS}${salt}${digest.hex()}"
 
 
 def insert(table: str, columns: list[str], values: list[str]) -> str:

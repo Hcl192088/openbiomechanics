@@ -23,6 +23,7 @@ const FIELD_ALLOWED_VALUES = {
 const AGREEMENT_THRESHOLD = 0.70;
 const MIN_SHARED_TASKS = 5;
 const MIN_COACHES = 2;
+const MAX_WORKERS_PBKDF2_ITERATIONS = 100000;
 
 export default {
   async fetch(request, env) {
@@ -291,6 +292,10 @@ function httpError(message, status) {
 async function verifyPassword(password, storedHash) {
   const [algorithm, iterationsRaw, salt, expectedHex] = String(storedHash).split("$");
   if (algorithm !== "pbkdf2_sha256") throw httpError(`Unsupported password hash algorithm: ${algorithm}`, 400);
+  const iterations = Number(iterationsRaw);
+  if (!Number.isInteger(iterations) || iterations < 1 || iterations > MAX_WORKERS_PBKDF2_ITERATIONS) {
+    throw httpError(`Unsupported PBKDF2 iteration count: ${iterationsRaw}`, 400);
+  }
   const keyMaterial = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(password),
@@ -303,7 +308,7 @@ async function verifyPassword(password, storedHash) {
       name: "PBKDF2",
       hash: "SHA-256",
       salt: new TextEncoder().encode(salt),
-      iterations: Number(iterationsRaw),
+      iterations,
     },
     keyMaterial,
     256
