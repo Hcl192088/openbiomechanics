@@ -98,6 +98,32 @@ PILOT_FIELD_METRICS = {
         "max_shoulder_horizontal_abduction",
     ],
     "torso_velo_z": ["pitch_speed_mph", "max_torso_rotational_velo"],
+    "hip_extension": [
+        "pitch_speed_mph",
+        "pelvis_rotation_fp",
+        "rotation_hip_shoulder_separation_fp",
+        "max_rotation_hip_shoulder_separation",
+        "max_torso_rotational_velo",
+        "cog_velo_pkh",
+        "stride_length",
+        "stride_angle",
+        "max_rear_hip_flexion",
+        "max_rear_hip_internal_rotation_velo",
+        "rear_hip_transfer_pkh_fp",
+        "rear_hip_generation_pkh_fp",
+        "rear_hip_absorption_pkh_fp",
+        "lead_hip_transfer_fp_br",
+        "lead_hip_generation_fp_br",
+        "lead_hip_absorption_fp_br",
+        "lead_knee_extension_from_fp_to_br",
+        "lead_knee_extension_angular_velo_fp",
+        "lead_grf_x_max",
+        "lead_grf_y_max",
+        "lead_grf_z_max",
+        "rear_grf_x_max",
+        "rear_grf_y_max",
+        "rear_grf_z_max",
+    ],
     "direction": ["pitch_speed_mph", "stride_length", "stride_angle", "max_cog_velo_x"],
     "heel_connection": [
         "pitch_speed_mph",
@@ -119,6 +145,10 @@ PILOT_INTERPRETATION = {
     ),
     "torso_velo_z": (
         "Visual fast/slow maps better to torso rotational velocity than to pitch speed."
+    ),
+    "hip_extension": (
+        "Pilot-positive but indirect: good/bad groups separate on speed and several "
+        "transfer/lead-leg metrics, but POI still lacks direct FP hip extension angles."
     ),
     "direction": (
         "Current good/bad rubric likely mixes open stride and cross-fire into one "
@@ -506,6 +536,7 @@ textarea { min-height:64px; resize:vertical; }
       <button onclick="setView('second')">Second base</button>
       <button onclick="setView('free')">Free</button>
       <button onclick="toggleReveal()">Reveal IDs</button>
+      <button onclick="openDashboard()">Dashboard</button>
     </div>
     <div class="row">
       <button onclick="togglePlay()">Play/Pause</button>
@@ -643,6 +674,10 @@ function toggleReveal() {
   updateItemStatus();
 }
 
+function openDashboard() {
+  window.open('/dashboard', '_blank');
+}
+
 async function loadItem() {
   const item = manifest[idx];
   document.getElementById('labelForm').reset();
@@ -732,13 +767,16 @@ def dashboard_page() -> str:
 body { margin:0; background:#111418; color:#e8eaed; font-family:Segoe UI, Arial, sans-serif; }
 main { max-width:1280px; margin:0 auto; padding:24px; }
 h1 { margin:0 0 8px; font-size:24px; }
-h2 { margin:28px 0 8px; font-size:19px; }
-h3 { margin:16px 0 8px; font-size:15px; color:#d7dee8; }
+h2 { margin:30px 0 10px; font-size:18px; color:#f2f4f8; }
+h3 { margin:18px 0 8px; font-size:14px; color:#9fb0c4; text-transform:uppercase; letter-spacing:0; }
 .muted { color:#9fb0c4; font-size:13px; }
 .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:8px; margin:16px 0; }
 .stat { border:1px solid #2c3138; background:#171b21; border-radius:6px; padding:10px; }
 .stat b { display:block; font-size:20px; margin-top:4px; }
-.field { border-top:1px solid #2c3138; padding-top:14px; margin-top:18px; }
+.field { border-top:2px solid #3a424d; padding-top:18px; margin-top:28px; }
+.field > h2 { font-size:22px; margin-top:0; }
+.metric { margin:18px 0 22px; padding-left:12px; border-left:3px solid #2c3138; }
+.metric h3 { margin-top:0; }
 .note { color:#bdc7d5; margin:4px 0 12px; }
 table { width:100%; border-collapse:collapse; margin:8px 0 18px; font-size:13px; }
 th, td { border-bottom:1px solid #2c3138; padding:7px 8px; text-align:right; vertical-align:top; }
@@ -757,12 +795,12 @@ a { color:#7cb7ff; }
 <body>
 <main>
   <h1>Qualitative Mechanics Pilot Dashboard</h1>
-  <div class="muted">Exploratory screen only. Recompute after each labeling batch.</div>
+  <div class="muted">Exploratory screen only. Click refresh after a labeling batch to recompute.</div>
   <div class="toolbar">
     <button class="primary" id="refreshBtn" onclick="refreshStats()">Refresh results</button>
     <span class="muted" id="refreshStatus">Not loaded yet.</span>
   </div>
-  <div id="qc" class="grid"></div>
+  <div id="qc" class="grid"><div class="stat"><span class="muted">Status</span><b>Waiting</b></div></div>
   <h2>Label Distributions</h2>
   <div id="distributions"></div>
   <h2>Pilot Statistics</h2>
@@ -803,7 +841,7 @@ function renderStats(data) {
 
   document.getElementById('fields').innerHTML = data.fields.map(field => {
     const metrics = field.metrics.map(metric => {
-      if (metric.missing_metric) return `<h3>${metric.metric}</h3><div class="warn">Metric missing from joined data.</div>`;
+      if (metric.missing_metric) return `<section class="metric"><h3>${metric.metric}</h3><div class="warn">Metric missing from joined data.</div></section>`;
       const groupRows = metric.groups.map(g => [g.value, g.n, fmt(g.mean, 4), fmt(g.sd, 4)]);
       const tests = metric.tests || {};
       const testBits = Object.entries(tests).map(([k,v]) => `<span class="pill">${k}: ${k.endsWith('_p') ? pcell(v) : fmt(v, 4)}</span>`).join(' ');
@@ -814,10 +852,11 @@ function renderStats(data) {
         fmt(p.mean_diff, 4),
         fmt(p.cohen_d, 4),
       ]);
-      return `<h3>${metric.metric}</h3>` +
+      return `<section class="metric"><h3>${metric.metric}</h3>` +
         table(['Group', 'n', 'mean', 'sd'], groupRows) +
         `<div>${testBits}</div>` +
-        (pairRows.length ? table(['Pair', 'Welch p', 'MWU p', 'mean diff', 'Cohen d'], pairRows) : '');
+        (pairRows.length ? table(['Pair', 'Welch p', 'MWU p', 'mean diff', 'Cohen d'], pairRows) : '') +
+        `</section>`;
     }).join('');
     return `<section class="field"><h2>${field.field}</h2><div class="note">${field.interpretation}</div>${metrics}</section>`;
   }).join('');
@@ -839,7 +878,6 @@ async function refreshStats() {
     btn.disabled = false;
   }
 }
-refreshStats();
 </script>
 </body>
 </html>"""

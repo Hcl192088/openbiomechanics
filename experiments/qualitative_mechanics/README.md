@@ -56,6 +56,8 @@ inside this experiment folder.
 Open the pilot dashboard from the server URL plus `/dashboard`. It recomputes
 the exploratory label-vs-POI screen from `labels.csv` and
 `baseball_pitching/data/poi/poi_metrics.csv`.
+The dashboard waits until you click `Refresh results` before recomputing, so
+opening it does not block on the statistics pass.
 
 Label groups are displayed in stable reader-facing order, for example
 `good`, `average`, `bad`, then `unclear` when present.
