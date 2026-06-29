@@ -272,6 +272,16 @@ Success check:
 - unclear/skipped labels are reported separately.
 - pooled metric analysis is hidden for low-agreement items.
 
+Current implementation:
+
+- `analyze_label_db.py` computes item-level coach agreement from local SQLite.
+- It validates required POI metric columns before any metric summary.
+- Default mode is read-only; `--write` emits `label_analysis_summary.json`.
+- Pooled metric summaries are gated by `min_coaches`, `min_shared_tasks`, and
+  exact-agreement threshold.
+- Current verified state has only coach `1`, so all 8 items report
+  `gate=fewer_than_two_coaches` and pooled analysis is hidden.
+
 ### Step 6 - Deploy Small Cloudflare Version
 
 Move the working local prototype to Cloudflare Pages, Workers/Functions, and

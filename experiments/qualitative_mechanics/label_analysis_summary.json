@@ -1,0 +1,183 @@
+{
+  "agreement_threshold": 0.7,
+  "min_shared_tasks": 5,
+  "min_coaches": 2,
+  "metric_columns": [
+    "pitch_speed_mph",
+    "max_cog_velo_x",
+    "pelvis_rotation_fp",
+    "rotation_hip_shoulder_separation_fp",
+    "max_rotation_hip_shoulder_separation",
+    "shoulder_horizontal_abduction_fp",
+    "max_shoulder_horizontal_abduction",
+    "max_torso_rotational_velo",
+    "torso_rotation_fp"
+  ],
+  "item_summaries": {
+    "direction": {
+      "agreement": {
+        "coach_count": 1,
+        "shared_tasks": 0,
+        "compared_pairs": 0,
+        "exact_matches": 0,
+        "exact_agreement_rate": null,
+        "unclear_count": 0,
+        "skipped_count": 0,
+        "label_distribution_by_coach": {
+          "1": {
+            "bad": 12,
+            "good": 18
+          }
+        },
+        "pooled_analysis_enabled": false,
+        "pooled_analysis_gate_reason": "fewer_than_two_coaches"
+      },
+      "pooled_metric_summary": null
+    },
+    "drift": {
+      "agreement": {
+        "coach_count": 1,
+        "shared_tasks": 0,
+        "compared_pairs": 0,
+        "exact_matches": 0,
+        "exact_agreement_rate": null,
+        "unclear_count": 0,
+        "skipped_count": 0,
+        "label_distribution_by_coach": {
+          "1": {
+            "average": 16,
+            "bad": 5,
+            "good": 9
+          }
+        },
+        "pooled_analysis_enabled": false,
+        "pooled_analysis_gate_reason": "fewer_than_two_coaches"
+      },
+      "pooled_metric_summary": null
+    },
+    "heel_connection": {
+      "agreement": {
+        "coach_count": 1,
+        "shared_tasks": 0,
+        "compared_pairs": 0,
+        "exact_matches": 0,
+        "exact_agreement_rate": null,
+        "unclear_count": 0,
+        "skipped_count": 0,
+        "label_distribution_by_coach": {
+          "1": {
+            "connected": 13,
+            "early_extension": 17
+          }
+        },
+        "pooled_analysis_enabled": false,
+        "pooled_analysis_gate_reason": "fewer_than_two_coaches"
+      },
+      "pooled_metric_summary": null
+    },
+    "hip_extension": {
+      "agreement": {
+        "coach_count": 1,
+        "shared_tasks": 0,
+        "compared_pairs": 0,
+        "exact_matches": 0,
+        "exact_agreement_rate": null,
+        "unclear_count": 0,
+        "skipped_count": 0,
+        "label_distribution_by_coach": {
+          "1": {
+            "bad": 9,
+            "good": 21
+          }
+        },
+        "pooled_analysis_enabled": false,
+        "pooled_analysis_gate_reason": "fewer_than_two_coaches"
+      },
+      "pooled_metric_summary": null
+    },
+    "hip_shoulder_separation": {
+      "agreement": {
+        "coach_count": 1,
+        "shared_tasks": 0,
+        "compared_pairs": 0,
+        "exact_matches": 0,
+        "exact_agreement_rate": null,
+        "unclear_count": 0,
+        "skipped_count": 0,
+        "label_distribution_by_coach": {
+          "1": {
+            "good": 13,
+            "bad": 8,
+            "average": 9
+          }
+        },
+        "pooled_analysis_enabled": false,
+        "pooled_analysis_gate_reason": "fewer_than_two_coaches"
+      },
+      "pooled_metric_summary": null
+    },
+    "lower_body_dominance": {
+      "agreement": {
+        "coach_count": 1,
+        "shared_tasks": 0,
+        "compared_pairs": 0,
+        "exact_matches": 0,
+        "exact_agreement_rate": null,
+        "unclear_count": 0,
+        "skipped_count": 0,
+        "label_distribution_by_coach": {
+          "1": {
+            "glute": 5,
+            "mixed": 11,
+            "quad": 14
+          }
+        },
+        "pooled_analysis_enabled": false,
+        "pooled_analysis_gate_reason": "fewer_than_two_coaches"
+      },
+      "pooled_metric_summary": null
+    },
+    "shoulder_horizontal_abduction": {
+      "agreement": {
+        "coach_count": 1,
+        "shared_tasks": 0,
+        "compared_pairs": 0,
+        "exact_matches": 0,
+        "exact_agreement_rate": null,
+        "unclear_count": 1,
+        "skipped_count": 0,
+        "label_distribution_by_coach": {
+          "1": {
+            "average": 11,
+            "good": 15,
+            "bad": 3,
+            "unclear": 1
+          }
+        },
+        "pooled_analysis_enabled": false,
+        "pooled_analysis_gate_reason": "fewer_than_two_coaches"
+      },
+      "pooled_metric_summary": null
+    },
+    "torso_velo_z": {
+      "agreement": {
+        "coach_count": 1,
+        "shared_tasks": 0,
+        "compared_pairs": 0,
+        "exact_matches": 0,
+        "exact_agreement_rate": null,
+        "unclear_count": 0,
+        "skipped_count": 0,
+        "label_distribution_by_coach": {
+          "1": {
+            "fast": 21,
+            "slow": 9
+          }
+        },
+        "pooled_analysis_enabled": false,
+        "pooled_analysis_gate_reason": "fewer_than_two_coaches"
+      },
+      "pooled_metric_summary": null
+    }
+  }
+}
