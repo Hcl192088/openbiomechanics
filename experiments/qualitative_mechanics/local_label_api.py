@@ -575,7 +575,7 @@ def smoke_test() -> None:
 
 def serve(host: str, port: int) -> None:
     server = ThreadingHTTPServer((host, port), LabelApiHandler)
-    print(f"Serving qualitative label API on http://{host}:{server.server_port}")
+    print(f"Serving qualitative label API on http://{host}:{server.server_port}", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
