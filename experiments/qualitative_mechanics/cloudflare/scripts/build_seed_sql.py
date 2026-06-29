@@ -76,7 +76,7 @@ def hash_password(password: str, salt: str) -> str:
 def insert(table: str, columns: list[str], values: list[str]) -> str:
     cols = ", ".join(columns)
     vals = ", ".join(values)
-    return f"INSERT INTO {table} ({cols}) VALUES ({vals});"
+    return f"INSERT OR IGNORE INTO {table} ({cols}) VALUES ({vals});"
 
 
 def build_seed() -> str:
@@ -90,7 +90,7 @@ def build_seed() -> str:
     lines = []
     for coach_id, name, password, is_admin, must_change_password, salt in seed_coaches:
         lines.append(
-            "INSERT INTO coaches (id, name, password_hash, is_admin, must_change_password, created_at) VALUES "
+            "INSERT OR IGNORE INTO coaches (id, name, password_hash, is_admin, must_change_password, created_at) VALUES "
             + "("
             + ", ".join(
                 [
