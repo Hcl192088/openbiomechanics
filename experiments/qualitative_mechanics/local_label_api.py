@@ -327,10 +327,7 @@ function renderTask(task) {
   }
   document.getElementById("submitBtn").disabled = false;
   [
-    ["Order", task.display_order],
-    ["Session pitch", task.session_pitch],
-    ["Pitcher", task.pitcher_id],
-    ["Throws", task.p_throws]
+    ["Task", task.display_order]
   ].forEach(([label, value]) => {
     const box = document.createElement("div");
     text(box, `${label}: ${value}`);
