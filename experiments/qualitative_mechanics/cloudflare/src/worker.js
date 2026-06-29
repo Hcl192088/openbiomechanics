@@ -129,6 +129,9 @@ export default {
       if (url.pathname.startsWith("/api/")) {
         return json({ error: "Not found." }, 404);
       }
+      if (url.pathname === "/dashboard") {
+        return env.ASSETS.fetch(new Request(new URL("/dashboard.html", request.url), request));
+      }
       return env.ASSETS.fetch(request);
     } catch (error) {
       const status = error.status || 400;

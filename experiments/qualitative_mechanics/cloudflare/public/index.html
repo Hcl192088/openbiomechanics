@@ -30,12 +30,6 @@
     .hidden { display: none; }
     #viewer { height: 58vh; min-height: 420px; position: relative; background: #111418; border-radius: 8px; overflow: hidden; }
     #loading { position: absolute; top: 12px; left: 12px; background: #171b21; color: #e8eaed; padding: 8px 10px; border: 1px solid #3a424d; border-radius: 6px; z-index: 2; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { border-bottom: 1px solid #e1e6ec; padding: 8px; text-align: left; }
-    th { background: #f0f3f6; }
-    .field { border-top: 2px solid #d9dee5; margin-top: 22px; padding-top: 14px; }
-    .metric { border-left: 3px solid #d9dee5; margin: 14px 0 18px; padding-left: 12px; }
-    .metric h3 { font-size: 14px; margin: 0 0 8px; color: #52616f; }
     @media (max-width: 720px) {
       main { padding: 14px; }
       header, .grid, .task-meta { display: block; }
@@ -73,18 +67,6 @@
       <span id="passwordStatus" class="status"></span>
     </div>
   </section>
-  <section id="progressSection" class="hidden">
-    <h2>Progress</h2>
-    <div id="progressCards" class="task-meta"></div>
-  </section>
-  <section id="dashboardSection" class="hidden">
-    <h2>Pilot Dashboard</h2>
-    <div class="actions" style="margin-bottom: 12px;">
-      <button type="button" class="secondary" id="refreshAnalysisBtn">Refresh results</button>
-      <span class="muted" id="refreshAnalysisStatus">Not loaded yet.</span>
-    </div>
-    <div id="pilotDashboard"></div>
-  </section>
   <section id="taskSection" class="hidden">
     <h2>Current Task</h2>
     <div id="viewer"><div id="loading">Loading motion...</div></div>
@@ -94,6 +76,7 @@
       <button type="button" class="secondary" data-view="side">Open side</button>
       <button type="button" class="secondary" data-view="second">Second base</button>
       <button type="button" class="secondary" data-view="free">Free</button>
+      <button type="button" class="secondary" id="dashboardBtn">Dashboard</button>
       <span class="muted" id="viewPill">view: home</span>
     </div>
     <div class="actions" style="margin-bottom: 12px;">
@@ -111,10 +94,6 @@
         <span id="taskStatus" class="status"></span>
       </div>
     </form>
-  </section>
-  <section id="analysisSection" class="hidden">
-    <h2>Coach Agreement</h2>
-    <table><thead><tr><th>Item</th><th>Coaches</th><th>Shared completed tasks</th><th>Agreement</th><th>Status</th></tr></thead><tbody id="analysisRows"></tbody></table>
   </section>
 </main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -285,103 +264,15 @@ async function loadPending() {
   renderTask(tasks[0]);
   setStatus("taskStatus", `${tasks.length} pending tasks.`);
 }
-async function loadAnalysis() {
-  const payload = await api("/api/analysis");
-  renderProgress(payload.dashboard);
-  renderPilotDashboard(payload.pilot_stats);
-  const body = document.getElementById("analysisRows");
-  body.replaceChildren();
-  Object.entries(payload.item_summaries).forEach(([item, summary]) => {
-    const agreement = summary.agreement;
-    const row = document.createElement("tr");
-    const rate = agreement.exact_agreement_rate === null ? "n/a" : agreement.exact_agreement_rate.toFixed(2);
-    [item, agreement.coach_count, agreement.shared_tasks, rate, agreement.pooled_analysis_gate_reason].forEach((value) => {
-      const cell = document.createElement("td");
-      text(cell, String(value));
-      row.appendChild(cell);
-    });
-    body.appendChild(row);
-  });
-  show(document.getElementById("analysisSection"), true);
-}
-function renderProgress(dashboard) {
-  const cards = document.getElementById("progressCards");
-  cards.replaceChildren();
-  [
-    ["My completed tasks", `${dashboard.my_completed_tasks} / ${dashboard.total_tasks}`],
-    ["My pending tasks", dashboard.my_pending_tasks],
-    ["Coaches", dashboard.coach_count],
-    ["Total labels", dashboard.total_labels]
-  ].forEach(([label, value]) => {
-    const box = document.createElement("div");
-    text(box, `${label}: ${value}`);
-    cards.appendChild(box);
-  });
-  show(document.getElementById("progressSection"), true);
-}
-function renderPilotDashboard(fields) {
-  const root = document.getElementById("pilotDashboard");
-  root.replaceChildren();
-  fields.forEach((field) => {
-    const section = document.createElement("section");
-    section.className = "field";
-    const title = document.createElement("h2");
-    text(title, field.field);
-    section.appendChild(title);
-    const note = document.createElement("div");
-    note.className = "muted";
-    text(note, field.enabled ? field.interpretation : `Hidden: ${field.gate_reason}`);
-    section.appendChild(note);
-    field.metrics.forEach((metric) => {
-      const block = document.createElement("div");
-      block.className = "metric";
-      const heading = document.createElement("h3");
-      text(heading, metric.metric);
-      block.appendChild(heading);
-      const tableEl = document.createElement("table");
-      tableEl.innerHTML = "<thead><tr><th>Group</th><th>n</th><th>mean</th><th>sd</th></tr></thead>";
-      const body = document.createElement("tbody");
-      metric.groups.forEach((group) => {
-        const row = document.createElement("tr");
-        [group.value, group.n, fmt(group.mean), fmt(group.sd)].forEach((value) => {
-          const cell = document.createElement("td");
-          text(cell, String(value ?? ""));
-          row.appendChild(cell);
-        });
-        body.appendChild(row);
-      });
-      tableEl.appendChild(body);
-      block.appendChild(tableEl);
-      if (metric.tests) {
-        const tests = document.createElement("div");
-        tests.className = "muted";
-        if (metric.tests.reason) {
-          text(tests, `Welch: ${metric.tests.reason}`);
-        } else {
-          text(tests, `Welch ${metric.tests.comparison}: p=${fmt(metric.tests.p)}, t=${fmt(metric.tests.t)}, df=${fmt(metric.tests.df)}, mean diff=${fmt(metric.tests.mean_diff)}, Cohen d=${fmt(metric.tests.cohen_d)}`);
-        }
-        block.appendChild(tests);
-      }
-      section.appendChild(block);
-    });
-    root.appendChild(section);
-  });
-  text(document.getElementById("refreshAnalysisStatus"), `Last updated ${new Date().toLocaleTimeString()}`);
-  show(document.getElementById("dashboardSection"), true);
-}
-function fmt(value) {
-  if (value === null || value === undefined) return "";
-  return typeof value === "number" ? value.toFixed(4).replace(/\.?0+$/, "") : String(value);
-}
 document.getElementById("loginBtn").addEventListener("click", async () => {
   try {
     const payload = await api("/api/login", {method: "POST", body: JSON.stringify({name: document.getElementById("name").value, password: document.getElementById("password").value})});
     token = payload.token;
+    sessionStorage.setItem("qm_token", token);
     setStatus("loginStatus", `Logged in as ${payload.coach_name}.`);
     show(document.getElementById("passwordSection"), payload.must_change_password);
     show(document.getElementById("taskSection"), true);
     await loadPending();
-    await loadAnalysis();
   } catch (error) {
     setStatus("loginStatus", error.message, false);
   }
@@ -397,14 +288,7 @@ document.getElementById("passwordBtn").addEventListener("click", async () => {
     setStatus("passwordStatus", error.message, false);
   }
 });
-document.getElementById("refreshAnalysisBtn").addEventListener("click", async () => {
-  try {
-    text(document.getElementById("refreshAnalysisStatus"), "Refreshing...");
-    await loadAnalysis();
-  } catch (error) {
-    text(document.getElementById("refreshAnalysisStatus"), error.message);
-  }
-});
+document.getElementById("dashboardBtn").addEventListener("click", () => window.open("/dashboard", "_blank"));
 document.getElementById("playBtn").addEventListener("click", () => { playing = !playing; });
 document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
 document.getElementById("frameSlider").addEventListener("input", (event) => {
@@ -422,7 +306,6 @@ document.getElementById("labelForm").addEventListener("submit", async (event) =>
     const payload = await api("/api/labels", {method: "POST", body: JSON.stringify({session_pitch: currentTask.session_pitch, playback_speed: document.getElementById("playbackSpeed").value, labels})});
     setStatus("taskStatus", `Saved ${payload.inserted_labels} labels. Pending: ${payload.pending_after}.`);
     await loadPending();
-    await loadAnalysis();
   } catch (error) {
     setStatus("taskStatus", error.message, false);
   }

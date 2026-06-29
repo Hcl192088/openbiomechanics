@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Qualitative Mechanics Pilot Dashboard</title>
+  <style>
+    :root { color-scheme: light; font-family: Arial, sans-serif; }
+    body { margin: 0; background: #f6f7f9; color: #1d252d; }
+    main { max-width: 1280px; margin: 0 auto; padding: 24px; }
+    h1 { font-size: 24px; margin: 0 0 8px; }
+    h2 { font-size: 20px; margin: 24px 0 10px; }
+    h3 { font-size: 14px; margin: 0 0 8px; color: #52616f; }
+    button { border: 0; border-radius: 6px; background: #1f6feb; color: #fff; padding: 9px 13px; cursor: pointer; }
+    button.secondary { background: #52616f; }
+    button:disabled { background: #9aa5b1; cursor: not-allowed; }
+    .actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+    .muted { color: #64707d; font-size: 13px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin: 16px 0; }
+    .stat { background: #fff; border: 1px solid #d9dee5; border-radius: 6px; padding: 10px; }
+    .stat b { display: block; font-size: 20px; margin-top: 4px; }
+    .field { background: #fff; border: 1px solid #d9dee5; border-radius: 8px; margin-top: 18px; padding: 16px; }
+    .metric { border-left: 3px solid #d9dee5; margin: 14px 0 18px; padding-left: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+    th, td { border-bottom: 1px solid #e1e6ec; padding: 8px; text-align: left; }
+    th { background: #f0f3f6; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Qualitative Mechanics Pilot Dashboard</h1>
+  <div class="muted">Exploratory screen only. Click refresh after a labeling batch to recompute.</div>
+  <div class="actions">
+    <button id="refreshBtn">Refresh results</button>
+    <button id="labelingBtn" class="secondary">Back to labeling</button>
+    <span id="status" class="muted">Not loaded yet.</span>
+  </div>
+  <div id="progress" class="grid"></div>
+  <h2>Coach Agreement</h2>
+  <div id="agreement"></div>
+  <h2>Pilot Statistics</h2>
+  <div id="fields"></div>
+</main>
+<script>
+let token = sessionStorage.getItem("qm_token") || "";
+function text(el, value) { el.textContent = value; }
+function fmt(value) {
+  if (value === null || value === undefined) return "";
+  return typeof value === "number" ? value.toFixed(4).replace(/\.?0+$/, "") : String(value);
+}
+async function api(path) {
+  const response = await fetch(path, {headers: {"Accept": "application/json", "Authorization": `Bearer ${token}`}});
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+  return payload;
+}
+function renderProgress(dashboard) {
+  document.getElementById("progress").innerHTML = [
+    ["My completed tasks", `${dashboard.my_completed_tasks} / ${dashboard.total_tasks}`],
+    ["My pending tasks", dashboard.my_pending_tasks],
+    ["Coaches", dashboard.coach_count],
+    ["Total labels", dashboard.total_labels]
+  ].map(([label, value]) => `<div class="stat"><span class="muted">${label}</span><b>${value}</b></div>`).join("");
+}
+function renderAgreement(items) {
+  const rows = Object.entries(items).map(([item, summary]) => {
+    const agreement = summary.agreement;
+    const rate = agreement.exact_agreement_rate === null ? "n/a" : agreement.exact_agreement_rate.toFixed(2);
+    return `<tr><td>${item}</td><td>${agreement.coach_count}</td><td>${agreement.shared_tasks}</td><td>${rate}</td><td>${agreement.pooled_analysis_gate_reason}</td></tr>`;
+  }).join("");
+  document.getElementById("agreement").innerHTML = `<table><thead><tr><th>Item</th><th>Coaches</th><th>Shared completed tasks</th><th>Agreement</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function renderFields(fields) {
+  document.getElementById("fields").innerHTML = "";
+  fields.forEach((field) => {
+    const section = document.createElement("section");
+    section.className = "field";
+    const title = document.createElement("h2");
+    text(title, field.field);
+    section.appendChild(title);
+    const note = document.createElement("div");
+    note.className = "muted";
+    text(note, field.enabled ? field.interpretation : `Hidden: ${field.gate_reason}`);
+    section.appendChild(note);
+    field.metrics.forEach((metric) => {
+      const block = document.createElement("div");
+      block.className = "metric";
+      const heading = document.createElement("h3");
+      text(heading, metric.metric);
+      block.appendChild(heading);
+      const rows = metric.groups.map((group) => `<tr><td>${group.value}</td><td>${group.n}</td><td>${fmt(group.mean)}</td><td>${fmt(group.sd)}</td></tr>`).join("");
+      const table = document.createElement("div");
+      table.innerHTML = `<table><thead><tr><th>Group</th><th>n</th><th>mean</th><th>sd</th></tr></thead><tbody>${rows}</tbody></table>`;
+      block.appendChild(table);
+      if (metric.tests) {
+        const tests = document.createElement("div");
+        tests.className = "muted";
+        text(tests, metric.tests.reason ? `Welch: ${metric.tests.reason}` : `Welch ${metric.tests.comparison}: p=${fmt(metric.tests.p)}, t=${fmt(metric.tests.t)}, df=${fmt(metric.tests.df)}, mean diff=${fmt(metric.tests.mean_diff)}, Cohen d=${fmt(metric.tests.cohen_d)}`);
+        block.appendChild(tests);
+      }
+      section.appendChild(block);
+    });
+    document.getElementById("fields").appendChild(section);
+  });
+}
+async function refresh() {
+  const status = document.getElementById("status");
+  try {
+    text(status, "Refreshing...");
+    const payload = await api("/api/analysis");
+    renderProgress(payload.dashboard);
+    renderAgreement(payload.item_summaries);
+    renderFields(payload.pilot_stats);
+    text(status, `Last updated ${new Date().toLocaleTimeString()}`);
+  } catch (error) {
+    text(status, error.message);
+  }
+}
+document.getElementById("refreshBtn").addEventListener("click", refresh);
+document.getElementById("labelingBtn").addEventListener("click", () => window.location.href = "/");
+</script>
+</body>
+</html>
