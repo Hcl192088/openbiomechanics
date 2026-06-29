@@ -230,6 +230,14 @@ Success check:
 - invalid values fail visibly.
 - no fallback label values are created.
 
+Current implementation:
+
+- `convert_labels_long.py` validates `labels.csv` against `label_tasks.csv`.
+- Default mode is read-only and prints row counts.
+- `--write` emits `labels_long.csv`.
+- Current verified output: 30 source pitch rows x 8 label fields = 240 long
+  label rows, with 0 skipped source rows.
+
 ### Step 4 - Build Local Database Prototype
 
 Use SQLite locally to mirror the future Cloudflare D1 schema.
