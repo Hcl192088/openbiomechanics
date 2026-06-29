@@ -21,11 +21,301 @@ import local_label_db
 
 SESSIONS: dict[str, str] = {}
 
+INDEX_HTML = r"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Qualitative Mechanics Labeling</title>
+  <style>
+    :root { color-scheme: light; font-family: Arial, sans-serif; }
+    body { margin: 0; background: #f6f7f9; color: #1d252d; }
+    main { max-width: 1040px; margin: 0 auto; padding: 24px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+    h1 { font-size: 24px; margin: 0; }
+    h2 { font-size: 18px; margin: 0 0 12px; }
+    section { background: #fff; border: 1px solid #d9dee5; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+    input, select, textarea, button { font: inherit; }
+    input, select, textarea { box-sizing: border-box; width: 100%; border: 1px solid #b9c1cc; border-radius: 6px; padding: 8px; background: #fff; }
+    textarea { min-height: 72px; resize: vertical; }
+    button { border: 0; border-radius: 6px; background: #1f6feb; color: #fff; padding: 9px 13px; cursor: pointer; }
+    button.secondary { background: #52616f; }
+    button:disabled { background: #9aa5b1; cursor: not-allowed; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .muted { color: #64707d; font-size: 13px; }
+    .status { font-size: 13px; min-height: 20px; }
+    .error { color: #b42318; }
+    .ok { color: #067647; }
+    .task-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+    .task-meta div { background: #eef2f6; border-radius: 6px; padding: 8px; font-size: 13px; }
+    .hidden { display: none; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border-bottom: 1px solid #e1e6ec; padding: 8px; text-align: left; }
+    th { background: #f0f3f6; }
+    @media (max-width: 720px) {
+      main { padding: 14px; }
+      header, .grid, .task-meta { display: block; }
+      .grid > div, .task-meta div { margin-bottom: 10px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Qualitative Mechanics Labeling</h1>
+      <div class="muted">Local prototype</div>
+    </div>
+    <button id="refreshBtn" class="secondary" disabled>Refresh</button>
+  </header>
+
+  <section id="loginSection">
+    <h2>Login</h2>
+    <div class="grid">
+      <div>
+        <label for="name">Coach name</label>
+        <input id="name" value="pilot_coach_1">
+      </div>
+      <div>
+        <label for="password">Password</label>
+        <input id="password" type="password" value="local-only-test-password">
+      </div>
+    </div>
+    <div class="actions" style="margin-top: 12px;">
+      <button id="loginBtn">Login</button>
+      <span id="loginStatus" class="status"></span>
+    </div>
+  </section>
+
+  <section id="taskSection" class="hidden">
+    <h2>Current Task</h2>
+    <div id="taskMeta" class="task-meta"></div>
+    <form id="labelForm">
+      <div id="labelFields" class="grid"></div>
+      <div class="grid" style="margin-top: 12px;">
+        <div>
+          <label for="viewUsed">View used</label>
+          <select id="viewUsed">
+            <option value="side">side</option>
+            <option value="second">second</option>
+            <option value="home">home</option>
+            <option value="free">free</option>
+          </select>
+        </div>
+        <div>
+          <label for="playbackSpeed">Playback speed</label>
+          <select id="playbackSpeed">
+            <option value="1">1</option>
+            <option value="0.5">0.5</option>
+            <option value="0.25">0.25</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top: 12px;">
+        <label for="notes">Notes</label>
+        <textarea id="notes"></textarea>
+      </div>
+      <div class="actions" style="margin-top: 12px;">
+        <button id="submitBtn" type="submit">Submit task</button>
+        <span id="taskStatus" class="status"></span>
+      </div>
+    </form>
+  </section>
+
+  <section id="analysisSection" class="hidden">
+    <h2>Agreement Gate</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Coaches</th>
+          <th>Shared tasks</th>
+          <th>Agreement</th>
+          <th>Gate</th>
+        </tr>
+      </thead>
+      <tbody id="analysisRows"></tbody>
+    </table>
+  </section>
+</main>
+<script>
+const allowedValues = {
+  hip_shoulder_separation: ["good", "average", "bad", "unclear"],
+  lower_body_dominance: ["glute", "quad", "mixed", "unclear"],
+  direction: ["good", "bad", "unclear"],
+  shoulder_horizontal_abduction: ["good", "average", "bad", "unclear"],
+  torso_velo_z: ["fast", "slow", "unclear"],
+  hip_extension: ["good", "bad", "unclear"],
+  heel_connection: ["connected", "early_extension", "unclear"],
+  drift: ["good", "average", "bad", "unclear"]
+};
+
+let token = "";
+let tasks = [];
+let currentTask = null;
+
+function text(el, value) { el.textContent = value; }
+function show(el, visible) { el.classList.toggle("hidden", !visible); }
+
+async function api(path, options = {}) {
+  const headers = {"Accept": "application/json"};
+  if (options.body) headers["Content-Type"] = "application/json";
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const response = await fetch(path, {...options, headers});
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+  return payload;
+}
+
+function setStatus(id, message, ok = true) {
+  const el = document.getElementById(id);
+  text(el, message);
+  el.className = `status ${ok ? "ok" : "error"}`;
+}
+
+function renderTask(task) {
+  currentTask = task || null;
+  const meta = document.getElementById("taskMeta");
+  const fields = document.getElementById("labelFields");
+  meta.replaceChildren();
+  fields.replaceChildren();
+  if (!task) {
+    const done = document.createElement("div");
+    text(done, "No pending tasks.");
+    meta.appendChild(done);
+    document.getElementById("submitBtn").disabled = true;
+    return;
+  }
+  document.getElementById("submitBtn").disabled = false;
+  [
+    ["Order", task.display_order],
+    ["Session pitch", task.session_pitch],
+    ["Pitcher", task.pitcher_id],
+    ["Throws", task.p_throws]
+  ].forEach(([label, value]) => {
+    const box = document.createElement("div");
+    text(box, `${label}: ${value}`);
+    meta.appendChild(box);
+  });
+  task.active_label_fields.forEach((field) => {
+    const wrap = document.createElement("div");
+    const label = document.createElement("label");
+    label.setAttribute("for", `field_${field}`);
+    text(label, field);
+    const select = document.createElement("select");
+    select.id = `field_${field}`;
+    allowedValues[field].forEach((value) => {
+      const option = document.createElement("option");
+      option.value = value;
+      text(option, value);
+      select.appendChild(option);
+    });
+    wrap.appendChild(label);
+    wrap.appendChild(select);
+    fields.appendChild(wrap);
+  });
+}
+
+async function loadPending() {
+  const payload = await api("/api/pending");
+  tasks = payload.tasks;
+  renderTask(tasks[0]);
+  setStatus("taskStatus", `${tasks.length} pending tasks.`);
+}
+
+async function loadAnalysis() {
+  const payload = await api("/api/analysis");
+  const body = document.getElementById("analysisRows");
+  body.replaceChildren();
+  Object.entries(payload.item_summaries).forEach(([item, summary]) => {
+    const agreement = summary.agreement;
+    const row = document.createElement("tr");
+    [item, agreement.coach_count, agreement.shared_tasks, agreement.exact_agreement_rate ?? "n/a", agreement.pooled_analysis_gate_reason].forEach((value) => {
+      const cell = document.createElement("td");
+      text(cell, String(value));
+      row.appendChild(cell);
+    });
+    body.appendChild(row);
+  });
+  show(document.getElementById("analysisSection"), true);
+}
+
+document.getElementById("loginBtn").addEventListener("click", async () => {
+  try {
+    const payload = await api("/api/login", {
+      method: "POST",
+      body: JSON.stringify({
+        name: document.getElementById("name").value,
+        password: document.getElementById("password").value
+      })
+    });
+    token = payload.token;
+    setStatus("loginStatus", `Logged in as coach ${payload.coach_id}.`);
+    show(document.getElementById("taskSection"), true);
+    document.getElementById("refreshBtn").disabled = false;
+    await loadPending();
+    await loadAnalysis();
+  } catch (error) {
+    setStatus("loginStatus", error.message, false);
+  }
+});
+
+document.getElementById("refreshBtn").addEventListener("click", async () => {
+  try {
+    await loadPending();
+    await loadAnalysis();
+  } catch (error) {
+    setStatus("taskStatus", error.message, false);
+  }
+});
+
+document.getElementById("labelForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!currentTask) return;
+  const labels = {};
+  currentTask.active_label_fields.forEach((field) => {
+    labels[field] = document.getElementById(`field_${field}`).value;
+  });
+  try {
+    const payload = await api("/api/labels", {
+      method: "POST",
+      body: JSON.stringify({
+        session_pitch: currentTask.session_pitch,
+        view_used: document.getElementById("viewUsed").value,
+        playback_speed: document.getElementById("playbackSpeed").value,
+        notes: document.getElementById("notes").value,
+        labels
+      })
+    });
+    setStatus("taskStatus", `Saved ${payload.inserted_labels} labels. Pending: ${payload.pending_after}.`);
+    document.getElementById("notes").value = "";
+    await loadPending();
+    await loadAnalysis();
+  } catch (error) {
+    setStatus("taskStatus", error.message, false);
+  }
+});
+</script>
+</body>
+</html>
+"""
+
 
 def json_response(handler: BaseHTTPRequestHandler, status: int, payload: dict[str, Any]) -> None:
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     handler.send_response(status)
     handler.send_header("Content-Type", "application/json; charset=utf-8")
+    handler.send_header("Content-Length", str(len(body)))
+    handler.end_headers()
+    handler.wfile.write(body)
+
+
+def html_response(handler: BaseHTTPRequestHandler, status: int, html: str) -> None:
+    body = html.encode("utf-8")
+    handler.send_response(status)
+    handler.send_header("Content-Type", "text/html; charset=utf-8")
     handler.send_header("Content-Length", str(len(body)))
     handler.end_headers()
     handler.wfile.write(body)
@@ -146,6 +436,9 @@ class LabelApiHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         try:
+            if self.path == "/":
+                html_response(self, 200, INDEX_HTML)
+                return
             if self.path == "/api/pending":
                 coach_id = require_session(self)
                 with local_label_db.connect() as conn:
@@ -203,6 +496,15 @@ def request_json(url: str, method: str = "GET", payload: dict[str, Any] | None =
         return exc.code, json.loads(exc.read().decode("utf-8"))
 
 
+def request_text(url: str) -> tuple[int, str]:
+    request = urllib.request.Request(url, headers={"Accept": "text/html"}, method="GET")
+    try:
+        with urllib.request.urlopen(request, timeout=10) as response:
+            return response.status, response.read().decode("utf-8")
+    except urllib.error.HTTPError as exc:
+        return exc.code, exc.read().decode("utf-8")
+
+
 def smoke_test() -> None:
     local_label_db.init_db()
     SESSIONS.clear()
@@ -211,6 +513,9 @@ def smoke_test() -> None:
     thread.start()
     base_url = f"http://127.0.0.1:{server.server_port}"
     try:
+        status, html = request_text(f"{base_url}/")
+        if status != 200 or "Qualitative Mechanics Labeling" not in html or "/api/login" not in html:
+            raise RuntimeError(f"UI page check failed: status={status}")
         status, login_payload = request_json(
             f"{base_url}/api/login",
             "POST",
@@ -255,6 +560,7 @@ def smoke_test() -> None:
         if status != 200 or len(analysis_payload["item_summaries"]) != 8:
             raise RuntimeError(f"Unexpected analysis response: status={status} payload={analysis_payload}")
         print(f"server={base_url}")
+        print(f"ui_status=200")
         print(f"login_status=200")
         print(f"pending_before=28")
         print(f"save_inserted_labels=8")

@@ -306,6 +306,9 @@ Local API checkpoint before deployment:
 - Current verified API state: login returns 200, pending starts at 28, one
   complete save inserts 8 label rows and reduces pending to 27, duplicate save
   returns 409, analysis returns 8 item summaries.
+- `GET /` now serves a minimal local prototype UI for login, pending task
+  display, 8-field pitch-level submission, and agreement-gate summary.
+- Current smoke test verifies the UI page loads before exercising the API.
 
 ## Explicit Non-Goals For Now
 
