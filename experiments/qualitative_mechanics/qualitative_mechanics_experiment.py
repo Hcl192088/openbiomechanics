@@ -747,6 +747,10 @@ th { color:#bdc7d5; font-weight:600; background:#171b21; position:sticky; top:0;
 .sig { color:#7ee787; font-weight:600; }
 .warn { color:#ffcf7a; }
 .pill { display:inline-block; padding:2px 7px; border-radius:999px; background:#242a33; color:#bdc7d5; margin-right:4px; }
+.toolbar { display:flex; gap:10px; align-items:center; margin:14px 0; flex-wrap:wrap; }
+button { background:#242a33; color:#f2f4f8; border:1px solid #3a424d; border-radius:6px; padding:8px 10px; cursor:pointer; }
+button.primary { background:#1f6feb; border-color:#2f81f7; }
+button:disabled { opacity:.55; cursor:default; }
 a { color:#7cb7ff; }
 </style>
 </head>
@@ -754,6 +758,10 @@ a { color:#7cb7ff; }
 <main>
   <h1>Qualitative Mechanics Pilot Dashboard</h1>
   <div class="muted">Exploratory screen only. Recompute after each labeling batch.</div>
+  <div class="toolbar">
+    <button class="primary" id="refreshBtn" onclick="refreshStats()">Refresh results</button>
+    <span class="muted" id="refreshStatus">Not loaded yet.</span>
+  </div>
   <div id="qc" class="grid"></div>
   <h2>Label Distributions</h2>
   <div id="distributions"></div>
@@ -775,10 +783,8 @@ function table(headers, rows) {
   return `<table><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>` +
     `<tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }
-async function main() {
-  const res = await fetch('/api/pilot-stats');
-  const data = await res.json();
-  if (!res.ok || data.error) throw new Error(data.error || res.statusText);
+function renderStats(data) {
+  const loadedAt = new Date();
   const qc = data.qc;
   document.getElementById('qc').innerHTML = [
     ['Rows', qc.labeled_rows],
@@ -815,8 +821,25 @@ async function main() {
     }).join('');
     return `<section class="field"><h2>${field.field}</h2><div class="note">${field.interpretation}</div>${metrics}</section>`;
   }).join('');
+  document.getElementById('refreshStatus').textContent = `Last updated ${loadedAt.toLocaleTimeString()} | rows ${qc.labeled_rows}`;
 }
-main().catch(err => { document.body.innerHTML = '<main><h1>Error</h1><pre>' + err.message + '</pre></main>'; });
+async function refreshStats() {
+  const btn = document.getElementById('refreshBtn');
+  const status = document.getElementById('refreshStatus');
+  btn.disabled = true;
+  status.textContent = 'Refreshing...';
+  try {
+    const res = await fetch('/api/pilot-stats?ts=' + Date.now(), {cache:'no-store'});
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || res.statusText);
+    renderStats(data);
+  } catch (err) {
+    status.textContent = 'Refresh failed: ' + err.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+refreshStats();
 </script>
 </body>
 </html>"""
