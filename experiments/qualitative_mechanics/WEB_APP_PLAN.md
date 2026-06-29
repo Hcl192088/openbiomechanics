@@ -197,6 +197,16 @@ GitHub should host code only. It should not be the production data store.
 GitHub Pages alone is not enough for this app because the app needs login,
 server-side permission checks, and label writes.
 
+Motion payload decision:
+
+- Coach labels, task metadata, account data, and progress belong in SQL/D1.
+- Skeleton motion frames should stay as static JSON assets or object storage
+  objects, not SQL rows.
+- Current local export uses `export_motion_json.py --write`.
+- Current verified export: 58 motion JSON files under `web_motion/`, total
+  payload bytes = 32,953,502, plus `web_motion_manifest.csv` mapping
+  `session_pitch` to JSON path, frame count, and byte size.
+
 ## Implementation Steps
 
 ### Step 1 - Freeze Current Local Prototype
