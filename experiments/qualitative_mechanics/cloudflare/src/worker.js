@@ -28,7 +28,6 @@ const MAX_JSON_BODY_BYTES = 16 * 1024;
 const MAX_NAME_LENGTH = 64;
 const MAX_PASSWORD_LENGTH = 128;
 const MIN_PASSWORD_LENGTH = 4;
-const MAX_NOTES_LENGTH = 2000;
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export default {
@@ -158,11 +157,9 @@ async function saveLabels(request, env, coachId) {
   const payload = await readObject(request);
   const sessionPitch = String(payload.session_pitch || "").trim();
   const playbackSpeed = String(payload.playback_speed || "").trim();
-  const notes = String(payload.notes || "").trim();
   const labels = payload.labels;
   if (!sessionPitch) throw httpError("session_pitch is required.", 400);
   if (!playbackSpeed) throw httpError("playback_speed is required.", 400);
-  if (notes.length > MAX_NOTES_LENGTH) throw httpError(`notes must be ${MAX_NOTES_LENGTH} characters or fewer.`, 400);
   if (!labels || typeof labels !== "object" || Array.isArray(labels)) {
     throw httpError("labels must be an object.", 400);
   }
@@ -196,7 +193,7 @@ async function saveLabels(request, env, coachId) {
       String(labels[itemName]).trim(),
       "",
       playbackSpeed,
-      notes,
+      "",
       createdAt
     )
   );

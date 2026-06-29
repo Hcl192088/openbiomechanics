@@ -115,13 +115,17 @@ def init_schema(conn: sqlite3.Connection) -> None:
 
 
 def seed_coaches(conn: sqlite3.Connection) -> None:
-    conn.execute(
-        """
-        INSERT INTO coaches (id, name, password_hash, is_admin, created_at)
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        ("1", "pilot_coach_1", hash_password("local-only-test-password"), 1, "2026-06-29T00:00:00+00:00"),
-    )
+    for coach_id, name, password, is_admin in [
+        ("1", "hcl", "0000", 1),
+        ("2", "ayung", "0000", 0),
+    ]:
+        conn.execute(
+            """
+            INSERT INTO coaches (id, name, password_hash, is_admin, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (coach_id, name, hash_password(password), is_admin, "2026-06-29T00:00:00+00:00"),
+        )
 
 
 def seed_tasks(conn: sqlite3.Connection) -> int:
@@ -270,7 +274,7 @@ def init_db() -> None:
 
 def smoke_test() -> None:
     with connect() as conn:
-        coach_id = login(conn, "pilot_coach_1", "local-only-test-password")
+        coach_id = login(conn, "hcl", "0000")
         pending = pending_tasks(conn, coach_id)
         completed = completed_task_count(conn, coach_id)
         if completed != 30:

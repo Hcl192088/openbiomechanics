@@ -66,7 +66,7 @@ Both preview accounts are marked as requiring a password reset after login. This
 ## Current security notes
 
 - SQL statements use D1 prepared statements with bound parameters.
-- Login and label APIs enforce JSON body, name, password, and notes length limits.
+- Login and label APIs enforce JSON body, name, and password length limits. Free-text notes are not exposed in the UI.
 - Session tokens are random bearer tokens stored in D1 and expire after 7 days.
 - Password hashes use PBKDF2-SHA256 with 100,000 iterations, which is the Cloudflare Workers WebCrypto limit.
 - The app does not yet have brute-force rate limiting, admin account management, or first-class audit logs.

@@ -95,7 +95,6 @@
       <div class="grid" style="margin-top: 12px;">
         <div><label for="playbackSpeed">Playback speed</label><select id="playbackSpeed"><option value="1">1</option><option value="0.5">0.5</option><option value="0.25">0.25</option></select></div>
       </div>
-      <div style="margin-top: 12px;"><label for="notes">Notes</label><textarea id="notes" maxlength="2000"></textarea></div>
       <div class="actions" style="margin-top: 12px;">
         <button id="submitBtn" type="submit">Submit task</button>
         <span id="taskStatus" class="status"></span>
@@ -346,9 +345,8 @@ document.getElementById("labelForm").addEventListener("submit", async (event) =>
   const labels = {};
   currentTask.active_label_fields.forEach((field) => { labels[field] = document.getElementById(`field_${field}`).value; });
   try {
-    const payload = await api("/api/labels", {method: "POST", body: JSON.stringify({session_pitch: currentTask.session_pitch, playback_speed: document.getElementById("playbackSpeed").value, notes: document.getElementById("notes").value, labels})});
+    const payload = await api("/api/labels", {method: "POST", body: JSON.stringify({session_pitch: currentTask.session_pitch, playback_speed: document.getElementById("playbackSpeed").value, labels})});
     setStatus("taskStatus", `Saved ${payload.inserted_labels} labels. Pending: ${payload.pending_after}.`);
-    document.getElementById("notes").value = "";
     await loadPending();
     await loadAnalysis();
   } catch (error) {

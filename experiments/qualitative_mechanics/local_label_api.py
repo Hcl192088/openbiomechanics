@@ -83,11 +83,11 @@ INDEX_HTML = r"""<!doctype html>
     <div class="grid">
       <div>
         <label for="name">Coach name</label>
-        <input id="name" value="pilot_coach_1">
+        <input id="name" value="hcl">
       </div>
       <div>
         <label for="password">Password</label>
-        <input id="password" type="password" value="local-only-test-password">
+        <input id="password" type="password" value="0000">
       </div>
     </div>
     <div class="actions" style="margin-top: 12px;">
@@ -116,15 +116,6 @@ INDEX_HTML = r"""<!doctype html>
       <div id="labelFields" class="grid"></div>
       <div class="grid" style="margin-top: 12px;">
         <div>
-          <label for="viewUsed">View used</label>
-          <select id="viewUsed">
-            <option value="side">side</option>
-            <option value="second">second</option>
-            <option value="home">home</option>
-            <option value="free">free</option>
-          </select>
-        </div>
-        <div>
           <label for="playbackSpeed">Playback speed</label>
           <select id="playbackSpeed">
             <option value="1">1</option>
@@ -132,10 +123,6 @@ INDEX_HTML = r"""<!doctype html>
             <option value="0.25">0.25</option>
           </select>
         </div>
-      </div>
-      <div style="margin-top: 12px;">
-        <label for="notes">Notes</label>
-        <textarea id="notes"></textarea>
       </div>
       <div class="actions" style="margin-top: 12px;">
         <button id="submitBtn" type="submit">Submit task</button>
@@ -433,14 +420,11 @@ document.getElementById("labelForm").addEventListener("submit", async (event) =>
       method: "POST",
       body: JSON.stringify({
         session_pitch: currentTask.session_pitch,
-        view_used: document.getElementById("viewUsed").value,
         playback_speed: document.getElementById("playbackSpeed").value,
-        notes: document.getElementById("notes").value,
         labels
       })
     });
     setStatus("taskStatus", `Saved ${payload.inserted_labels} labels. Pending: ${payload.pending_after}.`);
-    document.getElementById("notes").value = "";
     await loadPending();
     await loadAnalysis();
   } catch (error) {
@@ -550,15 +534,11 @@ def load_static_motion(session_pitch: str) -> dict[str, Any]:
 def save_pitch_labels(coach_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     session_pitch = str(payload.get("session_pitch", "")).strip()
     labels = payload.get("labels")
-    view_used = str(payload.get("view_used", "")).strip()
     playback_speed = str(payload.get("playback_speed", "")).strip()
-    notes = str(payload.get("notes", "")).strip()
     if not session_pitch:
         raise RuntimeError("session_pitch is required.")
     if not isinstance(labels, dict):
         raise RuntimeError("labels must be an object.")
-    if not view_used:
-        raise RuntimeError("view_used is required.")
     if not playback_speed:
         raise RuntimeError("playback_speed is required.")
 
@@ -596,9 +576,9 @@ def save_pitch_labels(coach_id: str, payload: dict[str, Any]) -> dict[str, Any]:
                     session_pitch,
                     item_name,
                     str(labels[item_name]).strip(),
-                    view_used,
+                    "",
                     playback_speed,
-                    notes,
+                    "",
                     created_at,
                 ),
             )
@@ -716,7 +696,7 @@ def smoke_test() -> None:
         status, login_payload = request_json(
             f"{base_url}/api/login",
             "POST",
-            {"name": "pilot_coach_1", "password": "local-only-test-password"},
+            {"name": "hcl", "password": "0000"},
         )
         if status != 200:
             raise RuntimeError(f"Login failed: status={status} payload={login_payload}")
@@ -731,7 +711,6 @@ def smoke_test() -> None:
             "POST",
             {
                 "session_pitch": first_task["session_pitch"],
-                "view_used": "test",
                 "playback_speed": "1",
                 "labels": labels,
             },
@@ -744,7 +723,6 @@ def smoke_test() -> None:
             "POST",
             {
                 "session_pitch": first_task["session_pitch"],
-                "view_used": "test",
                 "playback_speed": "1",
                 "labels": labels,
             },
