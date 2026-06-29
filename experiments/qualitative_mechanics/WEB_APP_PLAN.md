@@ -322,6 +322,8 @@ Local API checkpoint before deployment:
 - The local UI now reuses the original Three.js skeleton motion player path:
   pending tasks call `/api/motion?session_pitch=...`, which loads C3D motion
   data through the existing `load_motion_data` workflow.
+- `/api/motion` now reads the exported static JSON path from
+  `web_motion_manifest.csv`; it no longer falls back to reading local C3D files.
 
 ## Explicit Non-Goals For Now
 

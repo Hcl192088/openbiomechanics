@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import secrets
 import sqlite3
@@ -18,10 +19,12 @@ from urllib.parse import parse_qs, urlparse
 
 import analyze_label_db
 import local_label_db
-from qualitative_mechanics_experiment import load_motion_data
 
 
+EXPERIMENT_DIR = local_label_db.EXPERIMENT_DIR
+WEB_MOTION_MANIFEST_PATH = EXPERIMENT_DIR / "web_motion_manifest.csv"
 SESSIONS: dict[str, str] = {}
+WEB_MOTION_INDEX: dict[str, str] | None = None
 
 INDEX_HTML = r"""<!doctype html>
 <html lang="en">
@@ -515,6 +518,38 @@ def row_to_task(row: sqlite3.Row) -> dict[str, Any]:
     }
 
 
+def load_web_motion_index() -> dict[str, str]:
+    global WEB_MOTION_INDEX
+    if WEB_MOTION_INDEX is not None:
+        return WEB_MOTION_INDEX
+    if not WEB_MOTION_MANIFEST_PATH.exists():
+        raise FileNotFoundError(f"Missing web motion manifest: {WEB_MOTION_MANIFEST_PATH}")
+    with WEB_MOTION_MANIFEST_PATH.open("r", encoding="utf-8-sig", newline="") as f:
+        rows = list(csv.DictReader(f))
+    if not rows:
+        raise RuntimeError("web_motion_manifest.csv has no rows.")
+    required = {"session_pitch", "motion_path"}
+    missing = required.difference(rows[0].keys())
+    if missing:
+        raise RuntimeError(f"web_motion_manifest.csv missing required columns: {sorted(missing)}")
+    WEB_MOTION_INDEX = {row["session_pitch"]: row["motion_path"] for row in rows}
+    return WEB_MOTION_INDEX
+
+
+def load_static_motion(session_pitch: str) -> dict[str, Any]:
+    motion_path = load_web_motion_index().get(session_pitch)
+    if motion_path is None:
+        raise FileNotFoundError(f"No static motion JSON registered for {session_pitch}.")
+    full_path = EXPERIMENT_DIR / motion_path
+    if not full_path.exists():
+        raise FileNotFoundError(f"Missing static motion JSON for {session_pitch}: {full_path}")
+    with full_path.open("r", encoding="utf-8") as f:
+        payload = json.load(f)
+    if not isinstance(payload, dict) or "frames" not in payload or "connections" not in payload:
+        raise RuntimeError(f"Invalid static motion JSON for {session_pitch}: {full_path}")
+    return payload
+
+
 def save_pitch_labels(coach_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     session_pitch = str(payload.get("session_pitch", "")).strip()
     labels = payload.get("labels")
@@ -606,13 +641,13 @@ class LabelApiHandler(BaseHTTPRequestHandler):
                 session_pitch = qs.get("session_pitch", [""])[0]
                 with local_label_db.connect() as conn:
                     row = conn.execute(
-                        "SELECT c3d_path FROM label_tasks WHERE session_pitch = ? AND active = 1",
+                        "SELECT session_pitch FROM label_tasks WHERE session_pitch = ? AND active = 1",
                         (session_pitch,),
                     ).fetchone()
                 if row is None:
                     json_response(self, 404, {"error": f"No active task for {session_pitch}."})
                     return
-                json_response(self, 200, load_motion_data(row["c3d_path"], 3))
+                json_response(self, 200, load_static_motion(session_pitch))
                 return
             json_response(self, 404, {"error": "Not found."})
         except PermissionError as exc:
