@@ -8,7 +8,7 @@ The current goal is:
 
 1. Let each coach log in.
 2. Show only items that coach has not completed.
-3. Save one label per coach, pitch, and qualitative item.
+3. Save one completed pitch-level task per coach and pitch.
 4. Compare coach agreement at the qualitative-label level.
 5. Show pooled analysis only for items with acceptable coach agreement.
 
@@ -35,15 +35,17 @@ web step should preserve the same label meanings and analysis assumptions.
 
 Use the user's simplified rule:
 
-- One coach labels each assigned qualitative item once.
+- One coach labels each assigned pitch-level task once.
+- Each pitch-level task contains the active qualitative fields.
 - Completed items are hidden or marked complete for that coach.
 - Re-labeling is not part of the default workflow.
 - Repeated reliability rounds are out of scope for the first version.
 
-The current user estimate is 58 labeling tasks per coach. Before coding the
-web app, verify exactly how those 58 tasks are defined from the current item
-and pitch selection, because the existing `labels.csv` stores multiple label
-fields in one pitch row.
+Current verification: `manifest.csv` has 58 rows, so the first web version
+should treat the current workload as 58 pitch-level tasks per coach. This is
+not 58 x 8 separate UI tasks. Internally, the web database may still store one
+row per qualitative field for cleaner analysis, but the user-facing workflow is
+one pitch-level task at a time.
 
 ## Minimal Data Model
 
@@ -60,8 +62,8 @@ coaches
 label_tasks
 - id
 - session_pitch
-- item_name
 - display_order
+- active_label_fields
 - active
 
 labels
@@ -79,6 +81,7 @@ labels
 
 Rules:
 
+- `label_tasks` should have one active row per current `manifest.csv` row.
 - `labels` should have a unique key on `coach_id, session_pitch, item_name`.
 - Do not trust `coach_id` from the browser request body; derive it from the
   login session.
@@ -89,7 +92,8 @@ Rules:
 ## Migration From Current Files
 
 The current `labels.csv` is a wide table: one row contains all qualitative
-fields for one pitch. The web app should store one row per item.
+fields for one pitch. The web UI should continue to feel like one pitch-level
+task, but the database can store one row per qualitative field.
 
 Migration step:
 
@@ -272,4 +276,3 @@ Success check:
 - Complex reliability modeling.
 - Automatic mechanism conclusions.
 - Editing source data under `baseball_pitching/data/`.
-
