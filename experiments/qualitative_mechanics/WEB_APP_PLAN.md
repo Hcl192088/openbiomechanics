@@ -309,6 +309,9 @@ Local API checkpoint before deployment:
 - `GET /` now serves a minimal local prototype UI for login, pending task
   display, 8-field pitch-level submission, and agreement-gate summary.
 - Current smoke test verifies the UI page loads before exercising the API.
+- The local UI now reuses the original Three.js skeleton motion player path:
+  pending tasks call `/api/motion?session_pitch=...`, which loads C3D motion
+  data through the existing `load_motion_data` workflow.
 
 ## Explicit Non-Goals For Now
 

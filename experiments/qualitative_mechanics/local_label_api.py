@@ -14,9 +14,11 @@ import urllib.request
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 import analyze_label_db
 import local_label_db
+from qualitative_mechanics_experiment import load_motion_data
 
 
 SESSIONS: dict[str, str] = {}
@@ -30,7 +32,7 @@ INDEX_HTML = r"""<!doctype html>
   <style>
     :root { color-scheme: light; font-family: Arial, sans-serif; }
     body { margin: 0; background: #f6f7f9; color: #1d252d; }
-    main { max-width: 1040px; margin: 0 auto; padding: 24px; }
+    main { max-width: 1280px; margin: 0 auto; padding: 24px; }
     header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
     h1 { font-size: 24px; margin: 0; }
     h2 { font-size: 18px; margin: 0 0 12px; }
@@ -51,6 +53,8 @@ INDEX_HTML = r"""<!doctype html>
     .task-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
     .task-meta div { background: #eef2f6; border-radius: 6px; padding: 8px; font-size: 13px; }
     .hidden { display: none; }
+    #viewer { height: 58vh; min-height: 420px; position: relative; background: #111418; border-radius: 8px; overflow: hidden; }
+    #loading { position: absolute; top: 12px; left: 12px; background: #171b21; color: #e8eaed; padding: 8px 10px; border: 1px solid #3a424d; border-radius: 6px; z-index: 2; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th, td { border-bottom: 1px solid #e1e6ec; padding: 8px; text-align: left; }
     th { background: #f0f3f6; }
@@ -91,6 +95,19 @@ INDEX_HTML = r"""<!doctype html>
 
   <section id="taskSection" class="hidden">
     <h2>Current Task</h2>
+    <div id="viewer"><div id="loading">Loading motion...</div></div>
+    <div class="actions" style="margin: 12px 0;">
+      <button type="button" class="secondary" id="playBtn">Play/Pause</button>
+      <button type="button" class="secondary" data-view="home">Home</button>
+      <button type="button" class="secondary" data-view="side">Open side</button>
+      <button type="button" class="secondary" data-view="second">Second base</button>
+      <button type="button" class="secondary" data-view="free">Free</button>
+      <span class="muted" id="viewPill">view: home</span>
+    </div>
+    <div class="actions" style="margin-bottom: 12px;">
+      <input id="frameSlider" type="range" min="0" max="0" value="0" style="flex: 1; min-width: 220px;">
+      <span class="muted" id="frameText">0 / 0</span>
+    </div>
     <div id="taskMeta" class="task-meta"></div>
     <form id="labelForm">
       <div id="labelFields" class="grid"></div>
@@ -140,6 +157,8 @@ INDEX_HTML = r"""<!doctype html>
     </table>
   </section>
 </main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 const allowedValues = {
   hip_shoulder_separation: ["good", "average", "bad", "unclear"],
@@ -155,6 +174,121 @@ const allowedValues = {
 let token = "";
 let tasks = [];
 let currentTask = null;
+let scene, camera, renderer, controls, lines = [];
+let motion = null;
+let currentFrame = 0;
+let playing = true;
+let lastTime = 0;
+let currentView = "home";
+let threeReady = false;
+
+function initThree() {
+  if (threeReady) return;
+  const el = document.getElementById("viewer");
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x111418);
+  camera = new THREE.PerspectiveCamera(40, el.clientWidth / el.clientHeight, 1, 100000);
+  renderer = new THREE.WebGLRenderer({antialias: true});
+  renderer.setSize(el.clientWidth, el.clientHeight);
+  el.appendChild(renderer.domElement);
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  scene.add(new THREE.GridHelper(6000, 20, 0x3a424d, 0x222830));
+  window.addEventListener("resize", () => {
+    camera.aspect = el.clientWidth / el.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(el.clientWidth, el.clientHeight);
+  });
+  threeReady = true;
+  requestAnimationFrame(animate);
+}
+
+function clearLines() {
+  for (const line of lines) scene.remove(line);
+  lines = [];
+}
+
+function buildSkeleton() {
+  clearLines();
+  const mat = new THREE.LineBasicMaterial({color: 0xe8eaed, linewidth: 2});
+  for (const pair of motion.connections) {
+    const geom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+    const line = new THREE.Line(geom, mat);
+    line.userData = {a: pair[0], b: pair[1]};
+    scene.add(line);
+    lines.push(line);
+  }
+}
+
+function updateSkeleton() {
+  if (!motion) return;
+  const frame = motion.frames[currentFrame] || {};
+  for (const line of lines) {
+    const a = frame[line.userData.a], b = frame[line.userData.b];
+    line.visible = !!(a && b);
+    if (line.visible) line.geometry.setFromPoints([new THREE.Vector3(...a), new THREE.Vector3(...b)]);
+  }
+  document.getElementById("frameSlider").value = currentFrame;
+  text(document.getElementById("frameText"), `${currentFrame} / ${motion.frames.length - 1}`);
+}
+
+function centerOfFrame() {
+  const frame = motion?.frames?.[0] || {};
+  const vals = Object.values(frame);
+  const avg = vals.reduce((acc, p) => [acc[0] + p[0], acc[1] + p[1], acc[2] + p[2]], [0, 0, 0]);
+  return vals.length ? new THREE.Vector3(avg[0] / vals.length, avg[1] / vals.length, avg[2] / vals.length) : new THREE.Vector3();
+}
+
+function setView(view) {
+  currentView = view;
+  text(document.getElementById("viewPill"), `view: ${view}`);
+  if (!motion || !currentTask) return;
+  const target = centerOfFrame();
+  controls.target.copy(target);
+  controls.enableRotate = view === "free";
+  controls.enablePan = view === "free";
+  if (view === "home") {
+    camera.position.set(target.x + 8000, target.y + 1000, target.z);
+  } else if (view === "side") {
+    const lateral = currentTask.p_throws === "L" ? -5000 : 5000;
+    camera.position.set(target.x, target.y + 1000, target.z + lateral);
+  } else if (view === "second") {
+    camera.position.set(target.x - 8000, target.y + 1000, target.z);
+  }
+  camera.lookAt(target);
+  controls.update();
+}
+
+async function loadMotion(task) {
+  initThree();
+  const loading = document.getElementById("loading");
+  loading.style.display = "block";
+  text(loading, "Loading motion...");
+  try {
+    motion = await api(`/api/motion?session_pitch=${encodeURIComponent(task.session_pitch)}`);
+    currentFrame = 0;
+    document.getElementById("frameSlider").max = motion.frames.length - 1;
+    buildSkeleton();
+    updateSkeleton();
+    setView(currentView);
+    loading.style.display = "none";
+  } catch (error) {
+    motion = null;
+    clearLines();
+    text(loading, error.message);
+  }
+}
+
+function animate(t) {
+  requestAnimationFrame(animate);
+  if (motion && playing && t - lastTime > (1000 / motion.fps)) {
+    currentFrame = (currentFrame + 1) % motion.frames.length;
+    updateSkeleton();
+    lastTime = t;
+  }
+  if (controls) controls.update();
+  if (renderer) renderer.render(scene, camera);
+}
 
 function text(el, value) { el.textContent = value; }
 function show(el, visible) { el.classList.toggle("hidden", !visible); }
@@ -216,6 +350,7 @@ function renderTask(task) {
     wrap.appendChild(select);
     fields.appendChild(wrap);
   });
+  loadMotion(task);
 }
 
 async function loadPending() {
@@ -269,6 +404,21 @@ document.getElementById("refreshBtn").addEventListener("click", async () => {
   } catch (error) {
     setStatus("taskStatus", error.message, false);
   }
+});
+
+document.getElementById("playBtn").addEventListener("click", () => {
+  playing = !playing;
+});
+
+document.querySelectorAll("[data-view]").forEach((button) => {
+  button.addEventListener("click", () => setView(button.dataset.view));
+});
+
+document.getElementById("frameSlider").addEventListener("input", (event) => {
+  if (!motion) return;
+  currentFrame = Number(event.target.value);
+  playing = false;
+  updateSkeleton();
 });
 
 document.getElementById("labelForm").addEventListener("submit", async (event) => {
@@ -436,18 +586,33 @@ class LabelApiHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         try:
-            if self.path == "/":
+            parsed = urlparse(self.path)
+            if parsed.path == "/":
                 html_response(self, 200, INDEX_HTML)
                 return
-            if self.path == "/api/pending":
+            if parsed.path == "/api/pending":
                 coach_id = require_session(self)
                 with local_label_db.connect() as conn:
                     rows = local_label_db.pending_tasks(conn, coach_id)
                 json_response(self, 200, {"tasks": [row_to_task(row) for row in rows]})
                 return
-            if self.path == "/api/analysis":
+            if parsed.path == "/api/analysis":
                 require_session(self)
                 json_response(self, 200, analyze_label_db.build_summary())
+                return
+            if parsed.path == "/api/motion":
+                require_session(self)
+                qs = parse_qs(parsed.query)
+                session_pitch = qs.get("session_pitch", [""])[0]
+                with local_label_db.connect() as conn:
+                    row = conn.execute(
+                        "SELECT c3d_path FROM label_tasks WHERE session_pitch = ? AND active = 1",
+                        (session_pitch,),
+                    ).fetchone()
+                if row is None:
+                    json_response(self, 404, {"error": f"No active task for {session_pitch}."})
+                    return
+                json_response(self, 200, load_motion_data(row["c3d_path"], 3))
                 return
             json_response(self, 404, {"error": "Not found."})
         except PermissionError as exc:
