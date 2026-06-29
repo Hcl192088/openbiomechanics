@@ -112,10 +112,15 @@ const allowedValues = {
   heel_connection: ["connected", "early_extension", "unclear"],
   drift: ["good", "average", "bad", "unclear"]
 };
+const fieldLabels = {
+  hip_extension: "Hip Extension Direction",
+  direction: "Stride Direction",
+};
 let token = localStorage.getItem("qm_token") || "", tasks = [], currentTask = null;
 let scene, camera, renderer, controls, lines = [], motion = null;
 let currentFrame = 0, playing = true, lastTime = 0, currentView = "home", threeReady = false;
 function text(el, value) { el.textContent = value; }
+function labelField(field) { return fieldLabels[field] || field; }
 function show(el, visible) { el.classList.toggle("hidden", !visible); }
 function initThree() {
   if (threeReady) return;
@@ -246,7 +251,7 @@ function renderTask(task) {
     const wrap = document.createElement("div");
     const label = document.createElement("label");
     label.setAttribute("for", `field_${field}`);
-    text(label, field);
+    text(label, labelField(field));
     const select = document.createElement("select");
     select.id = `field_${field}`;
     allowedValues[field].forEach((value) => {

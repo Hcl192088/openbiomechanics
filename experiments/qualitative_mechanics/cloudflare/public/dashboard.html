@@ -24,6 +24,7 @@
     table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
     th, td { border-bottom: 1px solid #e1e6ec; padding: 8px; text-align: left; }
     th { background: #f0f3f6; }
+    .sig { color: #b42318; font-weight: 700; }
   </style>
 </head>
 <body>
@@ -43,7 +44,12 @@
 </main>
 <script>
 let token = localStorage.getItem("qm_token") || "";
+const fieldLabels = {
+  hip_extension: "Hip Extension Direction",
+  direction: "Stride Direction",
+};
 function text(el, value) { el.textContent = value; }
+function labelField(field) { return fieldLabels[field] || field; }
 function fmt(value) {
   if (value === null || value === undefined) return "";
   return typeof value === "number" ? value.toFixed(4).replace(/\.?0+$/, "") : String(value);
@@ -69,7 +75,7 @@ function renderFields(containerId, fields) {
     const section = document.createElement("section");
     section.className = "field";
     const title = document.createElement("h2");
-    text(title, field.field);
+    text(title, labelField(field.field));
     section.appendChild(title);
     const note = document.createElement("div");
     note.className = "muted";
@@ -85,12 +91,12 @@ function renderFields(containerId, fields) {
       const table = document.createElement("div");
       table.innerHTML = `<table><thead><tr><th>Group</th><th>n</th><th>mean</th><th>sd</th></tr></thead><tbody>${rows}</tbody></table>`;
       block.appendChild(table);
-      if (metric.tests) {
+      metric.tests.forEach((test) => {
         const tests = document.createElement("div");
-        tests.className = "muted";
-        text(tests, metric.tests.reason ? `Welch: ${metric.tests.reason}` : `Welch ${metric.tests.comparison}: p=${fmt(metric.tests.p)}, t=${fmt(metric.tests.t)}, df=${fmt(metric.tests.df)}, mean diff=${fmt(metric.tests.mean_diff)}, Cohen d=${fmt(metric.tests.cohen_d)}`);
+        tests.className = test.p !== null && test.p < 0.05 ? "sig" : "muted";
+        text(tests, test.reason ? `Welch ${test.comparison}: ${test.reason}` : `Welch ${test.comparison}: ${test.p < 0.05 ? "SIGNIFICANT, " : ""}p=${fmt(test.p)}, t=${fmt(test.t)}, df=${fmt(test.df)}, mean diff=${fmt(test.mean_diff)}, Cohen d=${fmt(test.cohen_d)}`);
         block.appendChild(tests);
-      }
+      });
       section.appendChild(block);
     });
     container.appendChild(section);

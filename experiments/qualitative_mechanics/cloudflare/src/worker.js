@@ -358,7 +358,7 @@ async function groupedMetric(env, field, metric, coachId = null) {
   return {
     metric,
     groups: groups.map((group) => group.summary),
-    tests: groups.length === 2 ? welchSummary(groups[0], groups[1]) : null,
+    tests: pairwiseWelch(groups),
   };
 }
 
@@ -409,6 +409,16 @@ function sd(values) {
 
 function round(value, digits) {
   return Math.round(value * (10 ** digits)) / (10 ** digits);
+}
+
+function pairwiseWelch(groups) {
+  const tests = [];
+  for (let i = 0; i < groups.length; i += 1) {
+    for (let j = i + 1; j < groups.length; j += 1) {
+      tests.push(welchSummary(groups[i], groups[j]));
+    }
+  }
+  return tests;
 }
 
 function welchSummary(leftGroup, rightGroup) {
