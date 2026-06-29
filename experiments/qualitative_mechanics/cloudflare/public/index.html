@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Qualitative Mechanics Labeling</title>
+  <style>
+    :root { color-scheme: light; font-family: Arial, sans-serif; }
+    body { margin: 0; background: #f6f7f9; color: #1d252d; }
+    main { max-width: 1280px; margin: 0 auto; padding: 24px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+    h1 { font-size: 24px; margin: 0; }
+    h2 { font-size: 18px; margin: 0 0 12px; }
+    section { background: #fff; border: 1px solid #d9dee5; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+    input, select, textarea, button { font: inherit; }
+    input, select, textarea { box-sizing: border-box; width: 100%; border: 1px solid #b9c1cc; border-radius: 6px; padding: 8px; background: #fff; }
+    textarea { min-height: 72px; resize: vertical; }
+    button { border: 0; border-radius: 6px; background: #1f6feb; color: #fff; padding: 9px 13px; cursor: pointer; }
+    button.secondary { background: #52616f; }
+    button:disabled { background: #9aa5b1; cursor: not-allowed; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .muted { color: #64707d; font-size: 13px; }
+    .status { font-size: 13px; min-height: 20px; }
+    .error { color: #b42318; }
+    .ok { color: #067647; }
+    .task-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+    .task-meta div { background: #eef2f6; border-radius: 6px; padding: 8px; font-size: 13px; }
+    .hidden { display: none; }
+    #viewer { height: 58vh; min-height: 420px; position: relative; background: #111418; border-radius: 8px; overflow: hidden; }
+    #loading { position: absolute; top: 12px; left: 12px; background: #171b21; color: #e8eaed; padding: 8px 10px; border: 1px solid #3a424d; border-radius: 6px; z-index: 2; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border-bottom: 1px solid #e1e6ec; padding: 8px; text-align: left; }
+    th { background: #f0f3f6; }
+    @media (max-width: 720px) {
+      main { padding: 14px; }
+      header, .grid, .task-meta { display: block; }
+      .grid > div, .task-meta div { margin-bottom: 10px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Qualitative Mechanics Labeling</h1>
+      <div class="muted">Cloudflare preview</div>
+    </div>
+    <button id="refreshBtn" class="secondary" disabled>Refresh</button>
+  </header>
+  <section id="loginSection">
+    <h2>Login</h2>
+    <div class="grid">
+      <div><label for="name">Coach name</label><input id="name" value="pilot_coach_1"></div>
+      <div><label for="password">Password</label><input id="password" type="password" value="local-only-test-password"></div>
+    </div>
+    <div class="actions" style="margin-top: 12px;">
+      <button id="loginBtn">Login</button>
+      <span id="loginStatus" class="status"></span>
+    </div>
+  </section>
+  <section id="taskSection" class="hidden">
+    <h2>Current Task</h2>
+    <div id="viewer"><div id="loading">Loading motion...</div></div>
+    <div class="actions" style="margin: 12px 0;">
+      <button type="button" class="secondary" id="playBtn">Play/Pause</button>
+      <button type="button" class="secondary" data-view="home">Home</button>
+      <button type="button" class="secondary" data-view="side">Open side</button>
+      <button type="button" class="secondary" data-view="second">Second base</button>
+      <button type="button" class="secondary" data-view="free">Free</button>
+      <span class="muted" id="viewPill">view: home</span>
+    </div>
+    <div class="actions" style="margin-bottom: 12px;">
+      <input id="frameSlider" type="range" min="0" max="0" value="0" style="flex: 1; min-width: 220px;">
+      <span class="muted" id="frameText">0 / 0</span>
+    </div>
+    <div id="taskMeta" class="task-meta"></div>
+    <form id="labelForm">
+      <div id="labelFields" class="grid"></div>
+      <div class="grid" style="margin-top: 12px;">
+        <div><label for="viewUsed">View used</label><select id="viewUsed"><option value="side">side</option><option value="second">second</option><option value="home">home</option><option value="free">free</option></select></div>
+        <div><label for="playbackSpeed">Playback speed</label><select id="playbackSpeed"><option value="1">1</option><option value="0.5">0.5</option><option value="0.25">0.25</option></select></div>
+      </div>
+      <div style="margin-top: 12px;"><label for="notes">Notes</label><textarea id="notes"></textarea></div>
+      <div class="actions" style="margin-top: 12px;">
+        <button id="submitBtn" type="submit">Submit task</button>
+        <span id="taskStatus" class="status"></span>
+      </div>
+    </form>
+  </section>
+  <section id="analysisSection" class="hidden">
+    <h2>Agreement Gate</h2>
+    <table><thead><tr><th>Item</th><th>Coaches</th><th>Shared tasks</th><th>Agreement</th><th>Gate</th></tr></thead><tbody id="analysisRows"></tbody></table>
+  </section>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const allowedValues = {
+  hip_shoulder_separation: ["good", "average", "bad", "unclear"],
+  lower_body_dominance: ["glute", "quad", "mixed", "unclear"],
+  direction: ["good", "bad", "unclear"],
+  shoulder_horizontal_abduction: ["good", "average", "bad", "unclear"],
+  torso_velo_z: ["fast", "slow", "unclear"],
+  hip_extension: ["good", "bad", "unclear"],
+  heel_connection: ["connected", "early_extension", "unclear"],
+  drift: ["good", "average", "bad", "unclear"]
+};
+let token = "", tasks = [], currentTask = null;
+let scene, camera, renderer, controls, lines = [], motion = null;
+let currentFrame = 0, playing = true, lastTime = 0, currentView = "home", threeReady = false;
+function text(el, value) { el.textContent = value; }
+function show(el, visible) { el.classList.toggle("hidden", !visible); }
+function initThree() {
+  if (threeReady) return;
+  const el = document.getElementById("viewer");
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x111418);
+  camera = new THREE.PerspectiveCamera(40, el.clientWidth / el.clientHeight, 1, 100000);
+  renderer = new THREE.WebGLRenderer({antialias: true});
+  renderer.setSize(el.clientWidth, el.clientHeight);
+  el.appendChild(renderer.domElement);
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  scene.add(new THREE.GridHelper(6000, 20, 0x3a424d, 0x222830));
+  window.addEventListener("resize", () => {
+    camera.aspect = el.clientWidth / el.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(el.clientWidth, el.clientHeight);
+  });
+  threeReady = true;
+  requestAnimationFrame(animate);
+}
+function clearLines() {
+  for (const line of lines) scene.remove(line);
+  lines = [];
+}
+function buildSkeleton() {
+  clearLines();
+  const mat = new THREE.LineBasicMaterial({color: 0xe8eaed, linewidth: 2});
+  for (const pair of motion.connections) {
+    const geom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+    const line = new THREE.Line(geom, mat);
+    line.userData = {a: pair[0], b: pair[1]};
+    scene.add(line);
+    lines.push(line);
+  }
+}
+function updateSkeleton() {
+  if (!motion) return;
+  const frame = motion.frames[currentFrame] || {};
+  for (const line of lines) {
+    const a = frame[line.userData.a], b = frame[line.userData.b];
+    line.visible = !!(a && b);
+    if (line.visible) line.geometry.setFromPoints([new THREE.Vector3(...a), new THREE.Vector3(...b)]);
+  }
+  document.getElementById("frameSlider").value = currentFrame;
+  text(document.getElementById("frameText"), `${currentFrame} / ${motion.frames.length - 1}`);
+}
+function centerOfFrame() {
+  const frame = motion?.frames?.[0] || {};
+  const vals = Object.values(frame);
+  const avg = vals.reduce((acc, p) => [acc[0] + p[0], acc[1] + p[1], acc[2] + p[2]], [0, 0, 0]);
+  return vals.length ? new THREE.Vector3(avg[0] / vals.length, avg[1] / vals.length, avg[2] / vals.length) : new THREE.Vector3();
+}
+function setView(view) {
+  currentView = view;
+  text(document.getElementById("viewPill"), `view: ${view}`);
+  if (!motion || !currentTask) return;
+  const target = centerOfFrame();
+  controls.target.copy(target);
+  controls.enableRotate = view === "free";
+  controls.enablePan = view === "free";
+  if (view === "home") camera.position.set(target.x + 8000, target.y + 1000, target.z);
+  else if (view === "side") camera.position.set(target.x, target.y + 1000, target.z + (currentTask.p_throws === "L" ? -5000 : 5000));
+  else if (view === "second") camera.position.set(target.x - 8000, target.y + 1000, target.z);
+  camera.lookAt(target);
+  controls.update();
+}
+async function api(path, options = {}) {
+  const headers = {"Accept": "application/json"};
+  if (options.body) headers["Content-Type"] = "application/json";
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const response = await fetch(path, {...options, headers});
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+  return payload;
+}
+async function loadMotion(task) {
+  initThree();
+  const loading = document.getElementById("loading");
+  loading.style.display = "block";
+  text(loading, "Loading motion...");
+  try {
+    motion = await api(`/api/motion?session_pitch=${encodeURIComponent(task.session_pitch)}`);
+    currentFrame = 0;
+    document.getElementById("frameSlider").max = motion.frames.length - 1;
+    buildSkeleton();
+    updateSkeleton();
+    setView(currentView);
+    loading.style.display = "none";
+  } catch (error) {
+    motion = null;
+    clearLines();
+    text(loading, error.message);
+  }
+}
+function animate(t) {
+  requestAnimationFrame(animate);
+  if (motion && playing && t - lastTime > (1000 / motion.fps)) {
+    currentFrame = (currentFrame + 1) % motion.frames.length;
+    updateSkeleton();
+    lastTime = t;
+  }
+  if (controls) controls.update();
+  if (renderer) renderer.render(scene, camera);
+}
+function setStatus(id, message, ok = true) {
+  const el = document.getElementById(id);
+  text(el, message);
+  el.className = `status ${ok ? "ok" : "error"}`;
+}
+function renderTask(task) {
+  currentTask = task || null;
+  const meta = document.getElementById("taskMeta"), fields = document.getElementById("labelFields");
+  meta.replaceChildren();
+  fields.replaceChildren();
+  if (!task) {
+    const done = document.createElement("div");
+    text(done, "No pending tasks.");
+    meta.appendChild(done);
+    document.getElementById("submitBtn").disabled = true;
+    return;
+  }
+  document.getElementById("submitBtn").disabled = false;
+  const box = document.createElement("div");
+  text(box, `Task: ${task.display_order}`);
+  meta.appendChild(box);
+  task.active_label_fields.forEach((field) => {
+    const wrap = document.createElement("div");
+    const label = document.createElement("label");
+    label.setAttribute("for", `field_${field}`);
+    text(label, field);
+    const select = document.createElement("select");
+    select.id = `field_${field}`;
+    allowedValues[field].forEach((value) => {
+      const option = document.createElement("option");
+      option.value = value;
+      text(option, value);
+      select.appendChild(option);
+    });
+    wrap.appendChild(label);
+    wrap.appendChild(select);
+    fields.appendChild(wrap);
+  });
+  loadMotion(task);
+}
+async function loadPending() {
+  const payload = await api("/api/pending");
+  tasks = payload.tasks;
+  renderTask(tasks[0]);
+  setStatus("taskStatus", `${tasks.length} pending tasks.`);
+}
+async function loadAnalysis() {
+  const payload = await api("/api/analysis");
+  const body = document.getElementById("analysisRows");
+  body.replaceChildren();
+  Object.entries(payload.item_summaries).forEach(([item, summary]) => {
+    const agreement = summary.agreement;
+    const row = document.createElement("tr");
+    [item, agreement.coach_count, agreement.shared_tasks, agreement.exact_agreement_rate ?? "n/a", agreement.pooled_analysis_gate_reason].forEach((value) => {
+      const cell = document.createElement("td");
+      text(cell, String(value));
+      row.appendChild(cell);
+    });
+    body.appendChild(row);
+  });
+  show(document.getElementById("analysisSection"), true);
+}
+document.getElementById("loginBtn").addEventListener("click", async () => {
+  try {
+    const payload = await api("/api/login", {method: "POST", body: JSON.stringify({name: document.getElementById("name").value, password: document.getElementById("password").value})});
+    token = payload.token;
+    setStatus("loginStatus", `Logged in as coach ${payload.coach_id}.`);
+    show(document.getElementById("taskSection"), true);
+    document.getElementById("refreshBtn").disabled = false;
+    await loadPending();
+    await loadAnalysis();
+  } catch (error) {
+    setStatus("loginStatus", error.message, false);
+  }
+});
+document.getElementById("refreshBtn").addEventListener("click", async () => {
+  try { await loadPending(); await loadAnalysis(); } catch (error) { setStatus("taskStatus", error.message, false); }
+});
+document.getElementById("playBtn").addEventListener("click", () => { playing = !playing; });
+document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
+document.getElementById("frameSlider").addEventListener("input", (event) => {
+  if (!motion) return;
+  currentFrame = Number(event.target.value);
+  playing = false;
+  updateSkeleton();
+});
+document.getElementById("labelForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!currentTask) return;
+  const labels = {};
+  currentTask.active_label_fields.forEach((field) => { labels[field] = document.getElementById(`field_${field}`).value; });
+  try {
+    const payload = await api("/api/labels", {method: "POST", body: JSON.stringify({session_pitch: currentTask.session_pitch, view_used: document.getElementById("viewUsed").value, playback_speed: document.getElementById("playbackSpeed").value, notes: document.getElementById("notes").value, labels})});
+    setStatus("taskStatus", `Saved ${payload.inserted_labels} labels. Pending: ${payload.pending_after}.`);
+    document.getElementById("notes").value = "";
+    await loadPending();
+    await loadAnalysis();
+  } catch (error) {
+    setStatus("taskStatus", error.message, false);
+  }
+});
+</script>
+</body>
+</html>

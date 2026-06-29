@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Build Cloudflare D1 seed SQL from the qualitative mechanics CSV files."""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import hashlib
+from pathlib import Path
+
+
+CLOUDFLARE_DIR = Path(__file__).resolve().parents[1]
+EXPERIMENT_DIR = CLOUDFLARE_DIR.parent
+TASKS_PATH = EXPERIMENT_DIR / "label_tasks.csv"
+LABELS_LONG_PATH = EXPERIMENT_DIR / "labels_long.csv"
+OUTPUT_PATH = CLOUDFLARE_DIR / "seed.sql"
+
+
+def read_csv(path: Path) -> list[dict[str, str]]:
+    if not path.exists():
+        raise FileNotFoundError(f"Missing file: {path}")
+    with path.open("r", encoding="utf-8-sig", newline="") as f:
+        rows = list(csv.DictReader(f))
+    if not rows:
+        raise RuntimeError(f"{path.name} has no rows.")
+    return rows
+
+
+def sql_string(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
+
+
+def hash_password(password: str, salt: str) -> str:
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 200_000)
+    return f"pbkdf2_sha256$200000${salt}${digest.hex()}"
+
+
+def insert(table: str, columns: list[str], values: list[str]) -> str:
+    cols = ", ".join(columns)
+    vals = ", ".join(values)
+    return f"INSERT INTO {table} ({cols}) VALUES ({vals});"
+
+
+def build_seed() -> str:
+    task_rows = read_csv(TASKS_PATH)
+    label_rows = read_csv(LABELS_LONG_PATH)
+    lines = [
+        "INSERT INTO coaches (id, name, password_hash, is_admin, created_at) VALUES "
+        + "("
+        + ", ".join(
+            [
+                sql_string("1"),
+                sql_string("pilot_coach_1"),
+                sql_string(hash_password("local-only-test-password", "cloudflare-preview-salt")),
+                "1",
+                sql_string("2026-06-29T00:00:00+00:00"),
+            ]
+        )
+        + ");"
+    ]
+    for row in task_rows:
+        lines.append(
+            insert(
+                "label_tasks",
+                [
+                    "id",
+                    "session_pitch",
+                    "display_order",
+                    "pitcher_id",
+                    "p_throws",
+                    "filename_new",
+                    "c3d_path",
+                    "active_label_fields",
+                    "active",
+                ],
+                [
+                    sql_string(row["task_id"]),
+                    sql_string(row["session_pitch"]),
+                    row["display_order"],
+                    sql_string(row["pitcher_id"]),
+                    sql_string(row["p_throws"]),
+                    sql_string(row["filename_new"]),
+                    sql_string(row["c3d_path"]),
+                    sql_string(row["active_label_fields"]),
+                    "1" if row["active"].strip().lower() == "true" else "0",
+                ],
+            )
+        )
+    for row in label_rows:
+        lines.append(
+            insert(
+                "labels",
+                [
+                    "coach_id",
+                    "session_pitch",
+                    "item_name",
+                    "label_value",
+                    "view_used",
+                    "playback_speed",
+                    "skipped",
+                    "skip_reason",
+                    "notes",
+                    "created_at",
+                ],
+                [
+                    sql_string(row["coach_id"]),
+                    sql_string(row["session_pitch"]),
+                    sql_string(row["item_name"]),
+                    sql_string(row["label_value"]),
+                    sql_string(row["view_used"]),
+                    sql_string(row["playback_speed"]),
+                    "1" if row["skipped"].strip().lower() == "true" else "0",
+                    sql_string(row["skip_reason"]),
+                    sql_string(row["notes"]),
+                    sql_string(row["created_at"]),
+                ],
+            )
+        )
+    return "\n".join(lines) + "\n"
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--write", action="store_true", help=f"Write {OUTPUT_PATH}.")
+    args = parser.parse_args()
+    sql = build_seed()
+    print(f"tasks={len(read_csv(TASKS_PATH))}")
+    print(f"labels={len(read_csv(LABELS_LONG_PATH))}")
+    print(f"bytes={len(sql.encode('utf-8'))}")
+    if args.write:
+        OUTPUT_PATH.write_text(sql, encoding="utf-8")
+        print(f"wrote={OUTPUT_PATH}")
+
+
+if __name__ == "__main__":
+    main()
