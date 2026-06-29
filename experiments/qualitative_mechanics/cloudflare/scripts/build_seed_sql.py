@@ -46,20 +46,27 @@ def insert(table: str, columns: list[str], values: list[str]) -> str:
 def build_seed() -> str:
     task_rows = read_csv(TASKS_PATH)
     label_rows = read_csv(LABELS_LONG_PATH)
-    lines = [
-        "INSERT INTO coaches (id, name, password_hash, is_admin, created_at) VALUES "
-        + "("
-        + ", ".join(
-            [
-                sql_string("1"),
-                sql_string("pilot_coach_1"),
-                sql_string(hash_password("local-only-test-password", "cloudflare-preview-salt")),
-                "1",
-                sql_string("2026-06-29T00:00:00+00:00"),
-            ]
-        )
-        + ");"
+    seed_coaches = [
+        ("1", "hcl", "0000", 1, 1, "cloudflare-preview-salt-hcl"),
+        ("2", "ayung", "0000", 0, 1, "cloudflare-preview-salt-ayung"),
     ]
+    lines = []
+    for coach_id, name, password, is_admin, must_change_password, salt in seed_coaches:
+        lines.append(
+            "INSERT INTO coaches (id, name, password_hash, is_admin, must_change_password, created_at) VALUES "
+            + "("
+            + ", ".join(
+                [
+                    sql_string(coach_id),
+                    sql_string(name),
+                    sql_string(hash_password(password, salt)),
+                    str(is_admin),
+                    str(must_change_password),
+                    sql_string("2026-06-29T00:00:00+00:00"),
+                ]
+            )
+            + ");"
+        )
     for row in task_rows:
         lines.append(
             insert(

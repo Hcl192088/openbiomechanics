@@ -47,18 +47,32 @@
       <h1>Qualitative Mechanics Labeling</h1>
       <div class="muted">Cloudflare preview</div>
     </div>
-    <button id="refreshBtn" class="secondary" disabled>Refresh</button>
   </header>
   <section id="loginSection">
     <h2>Login</h2>
     <div class="grid">
-      <div><label for="name">Coach name</label><input id="name" value="pilot_coach_1"></div>
-      <div><label for="password">Password</label><input id="password" type="password" value="local-only-test-password"></div>
+      <div><label for="name">Coach name</label><input id="name" value="hcl" maxlength="64" autocomplete="username"></div>
+      <div><label for="password">Password</label><input id="password" type="password" value="0000" maxlength="128" autocomplete="current-password"></div>
     </div>
     <div class="actions" style="margin-top: 12px;">
       <button id="loginBtn">Login</button>
       <span id="loginStatus" class="status"></span>
     </div>
+  </section>
+  <section id="passwordSection" class="hidden">
+    <h2>Reset Password</h2>
+    <div class="grid">
+      <div><label for="currentPassword">Current password</label><input id="currentPassword" type="password" value="0000" maxlength="128" autocomplete="current-password"></div>
+      <div><label for="newPassword">New password</label><input id="newPassword" type="password" maxlength="128" autocomplete="new-password"></div>
+    </div>
+    <div class="actions" style="margin-top: 12px;">
+      <button id="passwordBtn">Save password</button>
+      <span id="passwordStatus" class="status"></span>
+    </div>
+  </section>
+  <section id="dashboardSection" class="hidden">
+    <h2>Dashboard</h2>
+    <div id="dashboardCards" class="task-meta"></div>
   </section>
   <section id="taskSection" class="hidden">
     <h2>Current Task</h2>
@@ -79,10 +93,9 @@
     <form id="labelForm">
       <div id="labelFields" class="grid"></div>
       <div class="grid" style="margin-top: 12px;">
-        <div><label for="viewUsed">View used</label><select id="viewUsed"><option value="side">side</option><option value="second">second</option><option value="home">home</option><option value="free">free</option></select></div>
         <div><label for="playbackSpeed">Playback speed</label><select id="playbackSpeed"><option value="1">1</option><option value="0.5">0.5</option><option value="0.25">0.25</option></select></div>
       </div>
-      <div style="margin-top: 12px;"><label for="notes">Notes</label><textarea id="notes"></textarea></div>
+      <div style="margin-top: 12px;"><label for="notes">Notes</label><textarea id="notes" maxlength="2000"></textarea></div>
       <div class="actions" style="margin-top: 12px;">
         <button id="submitBtn" type="submit">Submit task</button>
         <span id="taskStatus" class="status"></span>
@@ -90,8 +103,8 @@
     </form>
   </section>
   <section id="analysisSection" class="hidden">
-    <h2>Agreement Gate</h2>
-    <table><thead><tr><th>Item</th><th>Coaches</th><th>Shared tasks</th><th>Agreement</th><th>Gate</th></tr></thead><tbody id="analysisRows"></tbody></table>
+    <h2>Coach Agreement</h2>
+    <table><thead><tr><th>Item</th><th>Coaches</th><th>Shared completed tasks</th><th>Agreement</th><th>Status</th></tr></thead><tbody id="analysisRows"></tbody></table>
   </section>
 </main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -264,12 +277,14 @@ async function loadPending() {
 }
 async function loadAnalysis() {
   const payload = await api("/api/analysis");
+  renderDashboard(payload.dashboard);
   const body = document.getElementById("analysisRows");
   body.replaceChildren();
   Object.entries(payload.item_summaries).forEach(([item, summary]) => {
     const agreement = summary.agreement;
     const row = document.createElement("tr");
-    [item, agreement.coach_count, agreement.shared_tasks, agreement.exact_agreement_rate ?? "n/a", agreement.pooled_analysis_gate_reason].forEach((value) => {
+    const rate = agreement.exact_agreement_rate === null ? "n/a" : agreement.exact_agreement_rate.toFixed(2);
+    [item, agreement.coach_count, agreement.shared_tasks, rate, agreement.pooled_analysis_gate_reason].forEach((value) => {
       const cell = document.createElement("td");
       text(cell, String(value));
       row.appendChild(cell);
@@ -278,21 +293,44 @@ async function loadAnalysis() {
   });
   show(document.getElementById("analysisSection"), true);
 }
+function renderDashboard(dashboard) {
+  const cards = document.getElementById("dashboardCards");
+  cards.replaceChildren();
+  [
+    ["My completed tasks", `${dashboard.my_completed_tasks} / ${dashboard.total_tasks}`],
+    ["My pending tasks", dashboard.my_pending_tasks],
+    ["Coaches", dashboard.coach_count],
+    ["Total labels", dashboard.total_labels]
+  ].forEach(([label, value]) => {
+    const box = document.createElement("div");
+    text(box, `${label}: ${value}`);
+    cards.appendChild(box);
+  });
+  show(document.getElementById("dashboardSection"), true);
+}
 document.getElementById("loginBtn").addEventListener("click", async () => {
   try {
     const payload = await api("/api/login", {method: "POST", body: JSON.stringify({name: document.getElementById("name").value, password: document.getElementById("password").value})});
     token = payload.token;
-    setStatus("loginStatus", `Logged in as coach ${payload.coach_id}.`);
+    setStatus("loginStatus", `Logged in as ${payload.coach_name}.`);
+    show(document.getElementById("passwordSection"), payload.must_change_password);
     show(document.getElementById("taskSection"), true);
-    document.getElementById("refreshBtn").disabled = false;
     await loadPending();
     await loadAnalysis();
   } catch (error) {
     setStatus("loginStatus", error.message, false);
   }
 });
-document.getElementById("refreshBtn").addEventListener("click", async () => {
-  try { await loadPending(); await loadAnalysis(); } catch (error) { setStatus("taskStatus", error.message, false); }
+document.getElementById("passwordBtn").addEventListener("click", async () => {
+  try {
+    await api("/api/password", {method: "POST", body: JSON.stringify({current_password: document.getElementById("currentPassword").value, new_password: document.getElementById("newPassword").value})});
+    document.getElementById("currentPassword").value = "";
+    document.getElementById("newPassword").value = "";
+    show(document.getElementById("passwordSection"), false);
+    setStatus("loginStatus", "Password updated.");
+  } catch (error) {
+    setStatus("passwordStatus", error.message, false);
+  }
 });
 document.getElementById("playBtn").addEventListener("click", () => { playing = !playing; });
 document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
@@ -308,7 +346,7 @@ document.getElementById("labelForm").addEventListener("submit", async (event) =>
   const labels = {};
   currentTask.active_label_fields.forEach((field) => { labels[field] = document.getElementById(`field_${field}`).value; });
   try {
-    const payload = await api("/api/labels", {method: "POST", body: JSON.stringify({session_pitch: currentTask.session_pitch, view_used: document.getElementById("viewUsed").value, playback_speed: document.getElementById("playbackSpeed").value, notes: document.getElementById("notes").value, labels})});
+    const payload = await api("/api/labels", {method: "POST", body: JSON.stringify({session_pitch: currentTask.session_pitch, playback_speed: document.getElementById("playbackSpeed").value, notes: document.getElementById("notes").value, labels})});
     setStatus("taskStatus", `Saved ${payload.inserted_labels} labels. Pending: ${payload.pending_after}.`);
     document.getElementById("notes").value = "";
     await loadPending();

@@ -24,6 +24,12 @@ const AGREEMENT_THRESHOLD = 0.70;
 const MIN_SHARED_TASKS = 5;
 const MIN_COACHES = 2;
 const MAX_WORKERS_PBKDF2_ITERATIONS = 100000;
+const MAX_JSON_BODY_BYTES = 16 * 1024;
+const MAX_NAME_LENGTH = 64;
+const MAX_PASSWORD_LENGTH = 128;
+const MIN_PASSWORD_LENGTH = 4;
+const MAX_NOTES_LENGTH = 2000;
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export default {
   async fetch(request, env) {
@@ -31,6 +37,10 @@ export default {
       const url = new URL(request.url);
       if (url.pathname === "/api/login" && request.method === "POST") {
         return json(await login(request, env));
+      }
+      if (url.pathname === "/api/password" && request.method === "POST") {
+        const coachId = await requireSession(request, env);
+        return json(await changePassword(request, env, coachId));
       }
       if (url.pathname === "/api/pending" && request.method === "GET") {
         const coachId = await requireSession(request, env);
@@ -41,8 +51,8 @@ export default {
         return json(await saveLabels(request, env, coachId));
       }
       if (url.pathname === "/api/analysis" && request.method === "GET") {
-        await requireSession(request, env);
-        return json(await analysis(env));
+        const coachId = await requireSession(request, env);
+        return json(await analysis(env, coachId));
       }
       if (url.pathname === "/api/motion" && request.method === "GET") {
         await requireSession(request, env);
@@ -63,19 +73,26 @@ async function login(request, env) {
   const payload = await readObject(request);
   const name = String(payload.name || "").trim();
   const password = String(payload.password || "");
-  if (!name || !password) throw httpError("name and password are required.", 400);
+  validateCoachName(name);
+  validatePasswordInput(password, "password");
   const coach = await env.DB.prepare(
-    "SELECT id, password_hash FROM coaches WHERE name = ?"
+    "SELECT id, name, password_hash, must_change_password FROM coaches WHERE name = ?"
   ).bind(name).first();
   if (!coach || !(await verifyPassword(password, coach.password_hash))) {
     throw httpError("Invalid login.", 401);
   }
   const token = crypto.randomUUID() + "." + crypto.randomUUID();
   const createdAt = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
   await env.DB.prepare(
-    "INSERT INTO sessions (token, coach_id, created_at) VALUES (?, ?, ?)"
-  ).bind(token, coach.id, createdAt).run();
-  return { token, coach_id: coach.id };
+    "INSERT INTO sessions (token, coach_id, created_at, expires_at) VALUES (?, ?, ?, ?)"
+  ).bind(token, coach.id, createdAt, expiresAt).run();
+  return {
+    token,
+    coach_id: coach.id,
+    coach_name: coach.name,
+    must_change_password: Boolean(coach.must_change_password),
+  };
 }
 
 async function requireSession(request, env) {
@@ -84,10 +101,35 @@ async function requireSession(request, env) {
   if (!header.startsWith(prefix)) throw httpError("Missing bearer token.", 401);
   const token = header.slice(prefix.length).trim();
   const row = await env.DB.prepare(
-    "SELECT coach_id FROM sessions WHERE token = ?"
+    "SELECT coach_id, expires_at FROM sessions WHERE token = ?"
   ).bind(token).first();
   if (!row) throw httpError("Invalid bearer token.", 401);
+  if (Date.parse(row.expires_at) <= Date.now()) {
+    await env.DB.prepare("DELETE FROM sessions WHERE token = ?").bind(token).run();
+    throw httpError("Expired bearer token.", 401);
+  }
   return row.coach_id;
+}
+
+async function changePassword(request, env, coachId) {
+  const payload = await readObject(request);
+  const currentPassword = String(payload.current_password || "");
+  const newPassword = String(payload.new_password || "");
+  validatePasswordInput(currentPassword, "current_password");
+  validatePasswordInput(newPassword, "new_password");
+  if (newPassword === "0000") throw httpError("new_password cannot remain 0000.", 400);
+  const coach = await env.DB.prepare(
+    "SELECT password_hash FROM coaches WHERE id = ?"
+  ).bind(coachId).first();
+  if (!coach || !(await verifyPassword(currentPassword, coach.password_hash))) {
+    throw httpError("Invalid current password.", 401);
+  }
+  const salt = crypto.randomUUID().replaceAll("-", "");
+  const passwordHash = await hashPassword(newPassword, salt);
+  await env.DB.prepare(
+    "UPDATE coaches SET password_hash = ?, must_change_password = 0 WHERE id = ?"
+  ).bind(passwordHash, coachId).run();
+  return { ok: true };
 }
 
 async function pendingTasks(env, coachId) {
@@ -115,13 +157,12 @@ async function pendingTasks(env, coachId) {
 async function saveLabels(request, env, coachId) {
   const payload = await readObject(request);
   const sessionPitch = String(payload.session_pitch || "").trim();
-  const viewUsed = String(payload.view_used || "").trim();
   const playbackSpeed = String(payload.playback_speed || "").trim();
   const notes = String(payload.notes || "").trim();
   const labels = payload.labels;
   if (!sessionPitch) throw httpError("session_pitch is required.", 400);
-  if (!viewUsed) throw httpError("view_used is required.", 400);
   if (!playbackSpeed) throw httpError("playback_speed is required.", 400);
+  if (notes.length > MAX_NOTES_LENGTH) throw httpError(`notes must be ${MAX_NOTES_LENGTH} characters or fewer.`, 400);
   if (!labels || typeof labels !== "object" || Array.isArray(labels)) {
     throw httpError("labels must be an object.", 400);
   }
@@ -153,7 +194,7 @@ async function saveLabels(request, env, coachId) {
       sessionPitch,
       itemName,
       String(labels[itemName]).trim(),
-      viewUsed,
+      "",
       playbackSpeed,
       notes,
       createdAt
@@ -191,7 +232,7 @@ async function motion(request, env) {
   });
 }
 
-async function analysis(env) {
+async function analysis(env, coachId) {
   const rows = await env.DB.prepare(
     "SELECT coach_id, session_pitch, item_name, label_value, skipped FROM labels ORDER BY item_name, session_pitch, coach_id"
   ).all();
@@ -209,11 +250,37 @@ async function analysis(env) {
     };
   }
   return {
+    dashboard: await dashboardStats(env, coachId),
     agreement_threshold: AGREEMENT_THRESHOLD,
     min_shared_tasks: MIN_SHARED_TASKS,
     min_coaches: MIN_COACHES,
     metric_columns: [],
     item_summaries: itemSummaries,
+  };
+}
+
+async function dashboardStats(env, coachId) {
+  const totalTasks = await env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM label_tasks WHERE active = 1"
+  ).first();
+  const myCompleted = await env.DB.prepare(
+    `SELECT COUNT(*) AS n
+     FROM (
+       SELECT session_pitch
+       FROM labels
+       WHERE coach_id = ?
+       GROUP BY session_pitch
+       HAVING COUNT(DISTINCT item_name) = ?
+     )`
+  ).bind(coachId, ACTIVE_LABEL_FIELDS.length).first();
+  const totalLabels = await env.DB.prepare("SELECT COUNT(*) AS n FROM labels").first();
+  const coachCount = await env.DB.prepare("SELECT COUNT(*) AS n FROM coaches").first();
+  return {
+    total_tasks: Number(totalTasks.n),
+    my_completed_tasks: Number(myCompleted.n),
+    my_pending_tasks: Number(totalTasks.n) - Number(myCompleted.n),
+    total_labels: Number(totalLabels.n),
+    coach_count: Number(coachCount.n),
   };
 }
 
@@ -264,6 +331,10 @@ function itemAgreement(rows) {
 }
 
 async function readObject(request) {
+  const length = Number(request.headers.get("Content-Length") || "0");
+  if (length > MAX_JSON_BODY_BYTES) {
+    throw httpError(`JSON body must be ${MAX_JSON_BODY_BYTES} bytes or fewer.`, 413);
+  }
   let payload;
   try {
     payload = await request.json();
@@ -274,6 +345,18 @@ async function readObject(request) {
     throw httpError("JSON body must be an object.", 400);
   }
   return payload;
+}
+
+function validateCoachName(name) {
+  if (!name || name.length > MAX_NAME_LENGTH || !/^[A-Za-z0-9_-]+$/.test(name)) {
+    throw httpError("name must be 1-64 characters and contain only letters, numbers, underscores, or hyphens.", 400);
+  }
+}
+
+function validatePasswordInput(password, fieldName) {
+  if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
+    throw httpError(`${fieldName} must be ${MIN_PASSWORD_LENGTH}-${MAX_PASSWORD_LENGTH} characters.`, 400);
+  }
 }
 
 function json(payload, status = 200) {
@@ -314,6 +397,27 @@ async function verifyPassword(password, storedHash) {
     256
   );
   return timingSafeEqual(hex(new Uint8Array(bits)), expectedHex);
+}
+
+async function hashPassword(password, salt) {
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"]
+  );
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      hash: "SHA-256",
+      salt: new TextEncoder().encode(salt),
+      iterations: MAX_WORKERS_PBKDF2_ITERATIONS,
+    },
+    keyMaterial,
+    256
+  );
+  return `pbkdf2_sha256$${MAX_WORKERS_PBKDF2_ITERATIONS}$${salt}$${hex(new Uint8Array(bits))}`;
 }
 
 function hex(bytes) {

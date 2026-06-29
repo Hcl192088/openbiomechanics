@@ -55,7 +55,18 @@ npx wrangler deploy
 
 ## Preview account
 
-- Coach name: `pilot_coach_1`
-- Password: `local-only-test-password`
+- Coach name: `hcl`
+- Password: `0000`
 
-This is only for preview testing. Before opening it to other coaches, add per-coach accounts with unique passwords and avoid sharing the preview account.
+- Coach name: `ayung`
+- Password: `0000`
+
+Both preview accounts are marked as requiring a password reset after login. This is only for preview testing. Before opening it to other coaches, use per-coach accounts with unique passwords and avoid sharing accounts.
+
+## Current security notes
+
+- SQL statements use D1 prepared statements with bound parameters.
+- Login and label APIs enforce JSON body, name, password, and notes length limits.
+- Session tokens are random bearer tokens stored in D1 and expire after 7 days.
+- Password hashes use PBKDF2-SHA256 with 100,000 iterations, which is the Cloudflare Workers WebCrypto limit.
+- The app does not yet have brute-force rate limiting, admin account management, or first-class audit logs.
