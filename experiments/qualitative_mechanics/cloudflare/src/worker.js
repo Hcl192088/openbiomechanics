@@ -254,7 +254,15 @@ async function saveLabels(request, env, coachId) {
       `INSERT INTO labels (
         coach_id, session_pitch, item_name, label_value, view_used,
         playback_speed, skipped, skip_reason, notes, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, 0, '', ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, 0, '', ?, ?)
+      ON CONFLICT(coach_id, session_pitch, item_name) DO UPDATE SET
+        label_value = excluded.label_value,
+        view_used = excluded.view_used,
+        playback_speed = excluded.playback_speed,
+        skipped = excluded.skipped,
+        skip_reason = excluded.skip_reason,
+        notes = excluded.notes,
+        created_at = excluded.created_at`
     ).bind(
       coachId,
       sessionPitch,
@@ -269,13 +277,13 @@ async function saveLabels(request, env, coachId) {
   try {
     await env.DB.batch(statements);
   } catch (error) {
-    throw httpError(`Duplicate or invalid label insert: ${error.message}`, 409);
+    throw httpError(`Invalid label save: ${error.message}`, 409);
   }
   const afterPending = (await pendingTasks(env, coachId)).length;
   return {
     ok: true,
     session_pitch: sessionPitch,
-    inserted_labels: ACTIVE_LABEL_FIELDS.length,
+    saved_labels: ACTIVE_LABEL_FIELDS.length,
     pending_before: beforePending,
     pending_after: afterPending,
   };

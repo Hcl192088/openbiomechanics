@@ -93,6 +93,7 @@
         <div><label for="playbackSpeed">Playback speed</label><select id="playbackSpeed"><option value="1">1</option><option value="0.5">0.5</option><option value="0.25">0.25</option></select></div>
       </div>
       <div class="actions" style="margin-top: 12px;">
+        <button id="previousBtn" type="button" class="secondary" disabled>Previous task</button>
         <button id="submitBtn" type="submit">Submit task</button>
         <span id="taskStatus" class="status"></span>
       </div>
@@ -116,7 +117,7 @@ const fieldLabels = {
   hip_extension: "Hip Extension Direction",
   direction: "Stride Direction",
 };
-let token = localStorage.getItem("qm_token") || "", tasks = [], currentTask = null;
+let token = localStorage.getItem("qm_token") || "", tasks = [], currentTask = null, previousTasks = [];
 let scene, camera, renderer, controls, lines = [], motion = null;
 let currentFrame = 0, playing = true, lastTime = 0, currentView = "home", threeReady = false;
 function text(el, value) { el.textContent = value; }
@@ -231,7 +232,7 @@ function setStatus(id, message, ok = true) {
   text(el, message);
   el.className = `status ${ok ? "ok" : "error"}`;
 }
-function renderTask(task) {
+function renderTask(task, saved = null) {
   currentTask = task || null;
   const meta = document.getElementById("taskMeta"), fields = document.getElementById("labelFields");
   meta.replaceChildren();
@@ -241,9 +242,11 @@ function renderTask(task) {
     text(done, "No pending tasks.");
     meta.appendChild(done);
     document.getElementById("submitBtn").disabled = true;
+    document.getElementById("previousBtn").disabled = previousTasks.length === 0;
     return;
   }
   document.getElementById("submitBtn").disabled = false;
+  document.getElementById("previousBtn").disabled = previousTasks.length === 0;
   const box = document.createElement("div");
   text(box, `Task: ${task.display_order}`);
   meta.appendChild(box);
@@ -260,10 +263,12 @@ function renderTask(task) {
       text(option, value);
       select.appendChild(option);
     });
+    if (saved?.labels?.[field]) select.value = saved.labels[field];
     wrap.appendChild(label);
     wrap.appendChild(select);
     fields.appendChild(wrap);
   });
+  if (saved?.playbackSpeed) document.getElementById("playbackSpeed").value = saved.playbackSpeed;
   loadMotion(task);
 }
 async function loadPending() {
@@ -306,6 +311,12 @@ document.getElementById("passwordBtn").addEventListener("click", async () => {
   }
 });
 document.getElementById("dashboardBtn").addEventListener("click", () => window.open("/dashboard", "_blank"));
+document.getElementById("previousBtn").addEventListener("click", () => {
+  const previous = previousTasks.pop();
+  if (!previous) return;
+  renderTask(previous.task, previous);
+  setStatus("taskStatus", "Loaded previous task. Submit again to overwrite your saved labels.");
+});
 document.getElementById("playBtn").addEventListener("click", () => { playing = !playing; });
 document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
 document.getElementById("frameSlider").addEventListener("input", (event) => {
@@ -319,9 +330,11 @@ document.getElementById("labelForm").addEventListener("submit", async (event) =>
   if (!currentTask) return;
   const labels = {};
   currentTask.active_label_fields.forEach((field) => { labels[field] = document.getElementById(`field_${field}`).value; });
+  const playbackSpeed = document.getElementById("playbackSpeed").value;
   try {
-    const payload = await api("/api/labels", {method: "POST", body: JSON.stringify({session_pitch: currentTask.session_pitch, playback_speed: document.getElementById("playbackSpeed").value, labels})});
-    setStatus("taskStatus", `Saved ${payload.inserted_labels} labels. Pending: ${payload.pending_after}.`);
+    const payload = await api("/api/labels", {method: "POST", body: JSON.stringify({session_pitch: currentTask.session_pitch, playback_speed: playbackSpeed, labels})});
+    previousTasks.push({ task: currentTask, labels: {...labels}, playbackSpeed });
+    setStatus("taskStatus", `Saved ${payload.saved_labels} labels. Pending: ${payload.pending_after}.`);
     await loadPending();
   } catch (error) {
     setStatus("taskStatus", error.message, false);
