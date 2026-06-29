@@ -75,6 +75,65 @@ FIELD_ALLOWED_VALUES = {
     "drift": {"good", "average", "bad", "unclear"},
 }
 
+FIELD_VALUE_ORDER = {
+    "hip_shoulder_separation": ["good", "average", "bad", "unclear"],
+    "lower_body_dominance": ["glute", "mixed", "quad", "unclear"],
+    "direction": ["good", "bad", "unclear"],
+    "shoulder_horizontal_abduction": ["good", "average", "bad", "unclear"],
+    "torso_velo_z": ["fast", "slow", "unclear"],
+    "hip_extension": ["good", "bad", "unclear"],
+    "heel_connection": ["connected", "early_extension", "unclear"],
+    "drift": ["good", "average", "bad", "unclear"],
+}
+
+PILOT_FIELD_METRICS = {
+    "hip_shoulder_separation": [
+        "pitch_speed_mph",
+        "max_rotation_hip_shoulder_separation",
+        "rotation_hip_shoulder_separation_fp",
+    ],
+    "shoulder_horizontal_abduction": [
+        "pitch_speed_mph",
+        "shoulder_horizontal_abduction_fp",
+        "max_shoulder_horizontal_abduction",
+    ],
+    "torso_velo_z": ["pitch_speed_mph", "max_torso_rotational_velo"],
+    "direction": ["pitch_speed_mph", "stride_length", "stride_angle", "max_cog_velo_x"],
+    "heel_connection": [
+        "pitch_speed_mph",
+        "lead_knee_extension_from_fp_to_br",
+        "lead_knee_extension_angular_velo_fp",
+        "lead_grf_z_max",
+    ],
+    "drift": ["pitch_speed_mph", "cog_velo_pkh", "max_cog_velo_x", "stride_angle"],
+}
+
+PILOT_INTERPRETATION = {
+    "hip_shoulder_separation": (
+        "Highest-priority validation candidate: visual groups align with direct "
+        "hip-shoulder separation POI metrics and pitch speed."
+    ),
+    "shoulder_horizontal_abduction": (
+        "Promising but sample-limited: direct shoulder horizontal abduction "
+        "metrics move in the expected direction, but the bad group is small."
+    ),
+    "torso_velo_z": (
+        "Visual fast/slow maps better to torso rotational velocity than to pitch speed."
+    ),
+    "direction": (
+        "Current good/bad rubric likely mixes open stride and cross-fire into one "
+        "bad group; angle-based categories should be split before strong interpretation."
+    ),
+    "heel_connection": (
+        "Contested label: pitch-speed separation should not be treated as a clean "
+        "mechanism until the rubric is tightened and matched to POI metrics."
+    ),
+    "drift": (
+        "More consistent with center-of-mass velocity at PKH than with max COM "
+        "velocity or pitch speed."
+    ),
+}
+
 LABEL_COLUMNS = [
     "saved_at_utc",
     "rater_id",
@@ -268,6 +327,142 @@ def load_motion_data(c3d_path: Path, frame_step: int) -> dict[str, object]:
             "connections": SKELETON_CONNECTIONS,
         },
     }
+
+
+def _ordered_values(field: str, values: list[str]) -> list[str]:
+    preferred = FIELD_VALUE_ORDER.get(field, [])
+    seen = set(values)
+    ordered = [value for value in preferred if value in seen]
+    ordered.extend(sorted(value for value in values if value not in set(ordered)))
+    return ordered
+
+
+def _cohen_d(a: np.ndarray, b: np.ndarray) -> float | None:
+    if len(a) < 2 or len(b) < 2:
+        return None
+    pooled = np.sqrt(((len(a) - 1) * a.var(ddof=1) + (len(b) - 1) * b.var(ddof=1)) / (len(a) + len(b) - 2))
+    if not pooled:
+        return None
+    return float((a.mean() - b.mean()) / pooled)
+
+
+def _round_or_none(value: float | None, digits: int = 4) -> float | None:
+    if value is None or pd.isna(value):
+        return None
+    return round(float(value), digits)
+
+
+def compute_pilot_stats() -> dict[str, object]:
+    from itertools import combinations
+    from scipy import stats
+
+    labels = pd.read_csv(LABELS_PATH, dtype={"session_pitch": str, "pitcher_id": str})
+    poi_path = DATA_ROOT / "poi" / "poi_metrics.csv"
+    if not poi_path.exists():
+        raise FileNotFoundError(f"Missing POI metrics: {poi_path}")
+    poi = pd.read_csv(poi_path, dtype={"session_pitch": str})
+    joined = labels.merge(poi, on="session_pitch", how="left", suffixes=("", "_poi"), indicator="_poi_merge")
+
+    session_counts = labels["session_pitch"].value_counts()
+    duplicates = session_counts[session_counts > 1].to_dict()
+    pitch_speed_missing = int(joined["pitch_speed_mph"].isna().sum()) if "pitch_speed_mph" in joined else len(joined)
+    missing_poi_rows = int((joined["_poi_merge"] == "left_only").sum())
+
+    result: dict[str, object] = {
+        "qc": {
+            "labeled_rows": int(len(labels)),
+            "unique_session_pitch": int(labels["session_pitch"].nunique()),
+            "duplicate_session_pitch_count": int(sum(count - 1 for count in duplicates.values())),
+            "duplicate_session_pitch_values": duplicates,
+            "missing_poi_rows": missing_poi_rows,
+            "missing_pitch_speed_mph": pitch_speed_missing,
+            "unique_pitchers": int(labels["pitcher_id"].nunique()) if "pitcher_id" in labels else None,
+            "throws": labels["p_throws"].value_counts().sort_index().to_dict() if "p_throws" in labels else {},
+        },
+        "label_distributions": {},
+        "fields": [],
+        "notes": {
+            "scope": "Exploratory pilot screen only; not a defensible inference test.",
+            "tests": {
+                "anova": "Parametric comparison of means across three or more groups.",
+                "kruskal": "Non-parametric comparison across three or more groups.",
+                "welch": "Two-group mean comparison allowing unequal variance.",
+                "mwu": "Two-group non-parametric Mann-Whitney U comparison.",
+            },
+        },
+    }
+
+    distributions: dict[str, dict[str, int]] = {}
+    for field in LABEL_FIELDS:
+        if field not in labels:
+            continue
+        counts = labels[field].fillna("").replace("", "<blank>").value_counts().to_dict()
+        values = _ordered_values(field, list(counts))
+        distributions[field] = {value: int(counts[value]) for value in values}
+    result["label_distributions"] = distributions
+
+    fields_out = []
+    for field, metrics in PILOT_FIELD_METRICS.items():
+        if field not in joined:
+            continue
+        field_rows = joined[joined[field].notna() & ~joined[field].isin(["", "unclear"])]
+        group_values = _ordered_values(field, sorted(field_rows[field].dropna().unique().tolist()))
+        metric_rows = []
+        for metric in metrics:
+            if metric not in field_rows:
+                metric_rows.append({"metric": metric, "missing_metric": True})
+                continue
+            groups = []
+            group_summaries = []
+            for value in group_values:
+                series = pd.to_numeric(field_rows.loc[field_rows[field] == value, metric], errors="coerce").dropna()
+                arr = series.to_numpy(dtype=float)
+                if len(arr) == 0:
+                    continue
+                groups.append((value, arr))
+                group_summaries.append({
+                    "value": value,
+                    "n": int(len(arr)),
+                    "mean": _round_or_none(float(arr.mean()), 4),
+                    "sd": _round_or_none(float(arr.std(ddof=1)), 4) if len(arr) > 1 else None,
+                })
+            tests: dict[str, object] = {}
+            pairs = []
+            if len(groups) == 2:
+                left_name, left = groups[0]
+                right_name, right = groups[1]
+                tests["welch_p"] = _round_or_none(stats.ttest_ind(left, right, equal_var=False).pvalue)
+                tests["mwu_p"] = _round_or_none(stats.mannwhitneyu(left, right, alternative="two-sided").pvalue)
+                tests["cohen_d"] = _round_or_none(_cohen_d(left, right))
+                tests["cohen_d_order"] = f"{left_name}-{right_name}"
+            elif len(groups) > 2:
+                arrays = [arr for _, arr in groups]
+                tests["anova_p"] = _round_or_none(stats.f_oneway(*arrays).pvalue)
+                tests["kruskal_p"] = _round_or_none(stats.kruskal(*arrays).pvalue)
+                for i, j in combinations(range(len(groups)), 2):
+                    left_name, left = groups[i]
+                    right_name, right = groups[j]
+                    pairs.append({
+                        "left": left_name,
+                        "right": right_name,
+                        "welch_p": _round_or_none(stats.ttest_ind(left, right, equal_var=False).pvalue),
+                        "mwu_p": _round_or_none(stats.mannwhitneyu(left, right, alternative="two-sided").pvalue),
+                        "mean_diff": _round_or_none(float(left.mean() - right.mean()), 4),
+                        "cohen_d": _round_or_none(_cohen_d(left, right)),
+                    })
+            metric_rows.append({
+                "metric": metric,
+                "groups": group_summaries,
+                "tests": tests,
+                "pairs": pairs,
+            })
+        fields_out.append({
+            "field": field,
+            "interpretation": PILOT_INTERPRETATION.get(field, ""),
+            "metrics": metric_rows,
+        })
+    result["fields"] = fields_out
+    return result
 
 
 def html_page() -> str:
@@ -526,6 +721,107 @@ main().catch(err => document.getElementById('loading').textContent = err.message
 </html>"""
 
 
+def dashboard_page() -> str:
+    return """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qualitative Mechanics Pilot Dashboard</title>
+<style>
+body { margin:0; background:#111418; color:#e8eaed; font-family:Segoe UI, Arial, sans-serif; }
+main { max-width:1280px; margin:0 auto; padding:24px; }
+h1 { margin:0 0 8px; font-size:24px; }
+h2 { margin:28px 0 8px; font-size:19px; }
+h3 { margin:16px 0 8px; font-size:15px; color:#d7dee8; }
+.muted { color:#9fb0c4; font-size:13px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:8px; margin:16px 0; }
+.stat { border:1px solid #2c3138; background:#171b21; border-radius:6px; padding:10px; }
+.stat b { display:block; font-size:20px; margin-top:4px; }
+.field { border-top:1px solid #2c3138; padding-top:14px; margin-top:18px; }
+.note { color:#bdc7d5; margin:4px 0 12px; }
+table { width:100%; border-collapse:collapse; margin:8px 0 18px; font-size:13px; }
+th, td { border-bottom:1px solid #2c3138; padding:7px 8px; text-align:right; vertical-align:top; }
+th:first-child, td:first-child { text-align:left; }
+th { color:#bdc7d5; font-weight:600; background:#171b21; position:sticky; top:0; }
+.sig { color:#7ee787; font-weight:600; }
+.warn { color:#ffcf7a; }
+.pill { display:inline-block; padding:2px 7px; border-radius:999px; background:#242a33; color:#bdc7d5; margin-right:4px; }
+a { color:#7cb7ff; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Qualitative Mechanics Pilot Dashboard</h1>
+  <div class="muted">Exploratory screen only. Recompute after each labeling batch.</div>
+  <div id="qc" class="grid"></div>
+  <h2>Label Distributions</h2>
+  <div id="distributions"></div>
+  <h2>Pilot Statistics</h2>
+  <div id="fields"></div>
+</main>
+<script>
+function fmt(v, digits=4) {
+  if (v === null || v === undefined || Number.isNaN(v)) return '';
+  if (typeof v === 'number') return Number.isInteger(v) ? String(v) : v.toFixed(digits);
+  return String(v);
+}
+function pcell(v) {
+  if (v === null || v === undefined) return '';
+  const cls = v < 0.05 ? 'sig' : (v < 0.10 ? 'warn' : '');
+  return `<span class="${cls}">${fmt(v, 4)}</span>`;
+}
+function table(headers, rows) {
+  return `<table><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>` +
+    `<tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+async function main() {
+  const res = await fetch('/api/pilot-stats');
+  const data = await res.json();
+  if (!res.ok || data.error) throw new Error(data.error || res.statusText);
+  const qc = data.qc;
+  document.getElementById('qc').innerHTML = [
+    ['Rows', qc.labeled_rows],
+    ['Unique pitches', qc.unique_session_pitch],
+    ['Duplicate pitches', qc.duplicate_session_pitch_count],
+    ['Missing POI', qc.missing_poi_rows],
+    ['Missing speed', qc.missing_pitch_speed_mph],
+    ['Pitchers', qc.unique_pitchers],
+    ['Throws', Object.entries(qc.throws).map(([k,v]) => `${k} ${v}`).join(', ')],
+  ].map(([k,v]) => `<div class="stat"><span class="muted">${k}</span><b>${fmt(v)}</b></div>`).join('');
+
+  document.getElementById('distributions').innerHTML = Object.entries(data.label_distributions).map(([field, counts]) => {
+    const rows = Object.entries(counts).map(([value, n]) => [value, n]);
+    return `<h3>${field}</h3>` + table(['Value', 'n'], rows);
+  }).join('');
+
+  document.getElementById('fields').innerHTML = data.fields.map(field => {
+    const metrics = field.metrics.map(metric => {
+      if (metric.missing_metric) return `<h3>${metric.metric}</h3><div class="warn">Metric missing from joined data.</div>`;
+      const groupRows = metric.groups.map(g => [g.value, g.n, fmt(g.mean, 4), fmt(g.sd, 4)]);
+      const tests = metric.tests || {};
+      const testBits = Object.entries(tests).map(([k,v]) => `<span class="pill">${k}: ${k.endsWith('_p') ? pcell(v) : fmt(v, 4)}</span>`).join(' ');
+      const pairRows = (metric.pairs || []).map(p => [
+        `${p.left} vs ${p.right}`,
+        pcell(p.welch_p),
+        pcell(p.mwu_p),
+        fmt(p.mean_diff, 4),
+        fmt(p.cohen_d, 4),
+      ]);
+      return `<h3>${metric.metric}</h3>` +
+        table(['Group', 'n', 'mean', 'sd'], groupRows) +
+        `<div>${testBits}</div>` +
+        (pairRows.length ? table(['Pair', 'Welch p', 'MWU p', 'mean diff', 'Cohen d'], pairRows) : '');
+    }).join('');
+    return `<section class="field"><h2>${field.field}</h2><div class="note">${field.interpretation}</div>${metrics}</section>`;
+  }).join('');
+}
+main().catch(err => { document.body.innerHTML = '<main><h1>Error</h1><pre>' + err.message + '</pre></main>'; });
+</script>
+</body>
+</html>"""
+
+
 class Handler(SimpleHTTPRequestHandler):
     def log_message(self, fmt: str, *args: object) -> None:
         sys.stderr.write(fmt % args + "\n")
@@ -551,8 +847,23 @@ class Handler(SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             return
+        if parsed.path == "/dashboard":
+            body = dashboard_page().encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         if parsed.path == "/api/manifest":
             self._json(_CFG["manifest"])
+            return
+        if parsed.path == "/api/pilot-stats":
+            try:
+                self._json(compute_pilot_stats())
+            except Exception as exc:
+                self._json({"error": str(exc)}, 500)
             return
         if parsed.path == "/api/motion":
             qs = parse_qs(parsed.query)
@@ -638,6 +949,7 @@ def main() -> None:
     parser.add_argument("--rebuild-manifest", action="store_true")
     parser.add_argument("--check-first-load", action="store_true")
     parser.add_argument("--patch-field", action="append", default=[])
+    parser.add_argument("--pilot-stats", action="store_true")
     parser.add_argument("--no-browser", action="store_true")
     args = parser.parse_args()
 
@@ -651,6 +963,10 @@ def main() -> None:
     _CFG["c3d_map"] = {row["session_pitch"]: row for row in manifest}
     _CFG["frame_step"] = args.frame_step
     _CFG["patch_fields"] = args.patch_field
+
+    if args.pilot_stats:
+        print(json.dumps(compute_pilot_stats(), ensure_ascii=False, indent=2))
+        return
 
     if args.check_first_load:
         first = manifest[0]
@@ -666,6 +982,7 @@ def main() -> None:
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     url = f"http://127.0.0.1:{server.server_address[1]}"
     print(f"Qualitative Mechanics Experiment -> {url}")
+    print(f"Pilot dashboard -> {url}/dashboard")
     print(f"Manifest: {MANIFEST_PATH}")
     print(f"Labels:   {LABELS_PATH}")
     if not args.no_browser:

@@ -53,6 +53,23 @@ D:\baseball\pitching\obp\baseball_pitching_env\Scripts\python.exe D:\baseball\pi
 The script reads source data from `baseball_pitching/data/` and writes only
 inside this experiment folder.
 
+Open the pilot dashboard from the server URL plus `/dashboard`. It recomputes
+the exploratory label-vs-POI screen from `labels.csv` and
+`baseball_pitching/data/poi/poi_metrics.csv`.
+
+Label groups are displayed in stable reader-facing order, for example
+`good`, `average`, `bad`, then `unclear` when present.
+
+The dashboard is a pilot screen only. Treat p-values as triage signals for the
+next labeling or rubric pass, not as mechanism conclusions.
+
+To emit the same statistics as JSON without opening the browser:
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'
+D:\baseball\pitching\obp\baseball_pitching_env\Scripts\python.exe D:\baseball\pitching\obp\experiments\qualitative_mechanics\qualitative_mechanics_experiment.py --pilot-stats --no-browser
+```
+
 ## Patch Existing Labels
 
 To relabel only existing rows that need one updated field, run patch mode. It
