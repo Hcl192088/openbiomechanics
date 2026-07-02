@@ -21,6 +21,15 @@ Candidate add-on after discussion:
 
 - `lead_leg_block`
 
+## Post-submit POI display
+
+The Cloudflare labeling UI should show at most one POI reference value per
+label item. The value should appear in the upper-right of the item row only
+after that item has been submitted.
+
+If an item has no explicit primary POI mapping, do not show a substitute metric.
+Do not silently fall back to a related metric.
+
 ## hip_shoulder_separation
 
 Current options:
@@ -35,15 +44,14 @@ Draft definition:
 Judge the visible amount of pelvis-to-torso separation during the delivery.
 Do not infer from pitch speed or other metrics.
 
-Post-submit reference metric candidates:
+Post-submit primary POI metric:
 
 - `rotation_hip_shoulder_separation_fp`
-- `max_rotation_hip_shoulder_separation`
 
 Open decision:
 
-- Decide whether the visual label targets separation around foot plant or the
-  maximum visible separation during the throwing sequence.
+- The first UI pass uses the FP value only because the item row has room for
+  one POI value.
 
 ## lower_body_dominance
 
