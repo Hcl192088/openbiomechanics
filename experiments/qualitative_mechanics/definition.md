@@ -3,9 +3,23 @@
 This file is a working draft for the Cloudflare labeling UI rubric.
 It records current label definitions and open decisions before implementation.
 
-Core rule: qualitative labels are visual judgments. Quantitative values may be
-shown only after submission as reference values, and only when the mapping is
-explicitly defined.
+Core rule: qualitative labels are visual judgments. Definitions should not
+depend on camera view. Quantitative values may be shown only after submission
+as reference values, and only when the mapping is explicitly defined.
+
+## Well-defined first-pass labels
+
+These are the first labels that are clear enough to expose in the Cloudflare UI
+with definitions and post-submit reference metrics:
+
+- `hip_shoulder_separation`
+- `shoulder_horizontal_abduction`
+- `torso_velo_z`
+- `drift`
+
+Candidate add-on after discussion:
+
+- `lead_leg_block`
 
 ## hip_shoulder_separation
 
@@ -19,7 +33,7 @@ Current options:
 Draft definition:
 
 Judge the visible amount of pelvis-to-torso separation during the delivery.
-Use the current view only. Do not infer from pitch speed or other metrics.
+Do not infer from pitch speed or other metrics.
 
 Post-submit reference metric candidates:
 
@@ -109,7 +123,7 @@ Current options:
 Draft definition:
 
 Judge the visible amount of throwing-arm horizontal abduction during the arm
-cocking phase. Use the current view only.
+cocking phase.
 
 Post-submit reference metric candidates:
 
@@ -239,3 +253,33 @@ Open decision:
 
 - Decide whether this label targets early COM movement speed, smoothness of
   forward move, or total forward displacement.
+
+## lead_leg_block
+
+Status:
+
+- Candidate new label.
+
+Draft options:
+
+- `good`
+- `average`
+- `bad`
+- `unclear`
+
+Draft definition:
+
+Judge how clearly the lead leg firms up or blocks after foot plant instead of
+continuing to collapse forward.
+
+Post-submit reference metric candidates:
+
+- `lead_knee_extension_from_fp_to_br`
+- `lead_knee_extension_angular_velo_fp`
+- `lead_grf_x_max`
+- `lead_grf_z_max`
+
+Open decision:
+
+- Decide whether this label should describe lead-knee extension only, or the
+  broader blocking pattern that includes lead-leg force and trunk transfer.
