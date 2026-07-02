@@ -6,6 +6,15 @@ This folder is for qualitative pitching-mechanics labeling experiments.
 It is not a conclusion-note area and it is not a place to patch final
 biomechanics claims by hand.
 
+The experiment design is based on Driveline Baseball's article
+"Quantitative vs. Qualitative Mechanical Analysis in Pitching Biomechanics":
+https://www.drivelinebaseball.com/2021/08/quantitative-vs-qualitative-mechanical-analysis-in-pitching-biomechanics/
+
+The implementation should preserve the article's core separation between
+qualitative coaching labels and quantitative biomechanical validation. Treat
+coach/video labels as hypotheses to test against measured data, not as
+mechanism conclusions by themselves.
+
 ## Experiment Rules
 
 - Keep qualitative labels separate from quantitative biomechanical metrics.
