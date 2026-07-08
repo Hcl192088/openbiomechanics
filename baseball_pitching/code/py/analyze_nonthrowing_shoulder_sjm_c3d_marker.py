@@ -7,6 +7,7 @@ Uses LSHO/RSHO from fp_poi_time to BR_time.
 from __future__ import annotations
 
 import json
+import zipfile
 from pathlib import Path
 
 import ezc3d
@@ -44,7 +45,13 @@ def load_input_table() -> pd.DataFrame:
         META_PATH,
         usecols=["user", "session_pitch", "session_height_m", "filename_new"],
     )
+    with zipfile.ZipFile(DATA_DIR / "full_sig" / "landmarks.zip", "r") as zf:
+        with zf.open("landmarks.csv") as fh:
+            br_df = pd.read_csv(fh, usecols=["session_pitch", "BR_time"])
+    br_df = br_df.dropna(subset=["BR_time"]).groupby("session_pitch", as_index=False)["BR_time"].first()
+
     df = poi.merge(meta, on="session_pitch", how="inner")
+    df = df.merge(br_df, on="session_pitch", how="inner")
     df["user_dir"] = df["user"].astype(int).map(lambda x: f"{x:06d}")
     df["c3d_path"] = df.apply(
         lambda r: ROOT / "data" / "c3d" / r["user_dir"] / str(r["filename_new"]),
@@ -87,9 +94,12 @@ def analyze_row(row: pd.Series) -> dict[str, float] | None:
         return None
 
     fp_time = row["fp_poi_time"]
+    br_time = row["BR_time"]
     height_m = row["session_height_m"]
     pitch_speed = row["pitch_speed_mph"]
-    if pd.isna(fp_time) or pd.isna(height_m) or pd.isna(pitch_speed):
+    if pd.isna(fp_time) or pd.isna(br_time) or pd.isna(height_m) or pd.isna(pitch_speed):
+        return None
+    if br_time <= fp_time:
         return None
 
     c3d = ezc3d.c3d(str(c3d_path))
@@ -103,10 +113,6 @@ def analyze_row(row: pd.Series) -> dict[str, float] | None:
     scale = point_scale(c3d)
     points *= scale
     times = c3d_time_vector(c3d)
-
-    br_time = float(times[-1])
-    if br_time <= fp_time:
-        return None
 
     valid_mask = np.isfinite(points).all(axis=1) & ~(points == 0).all(axis=1)
     window_mask = valid_mask & (times >= fp_time) & (times <= br_time)
