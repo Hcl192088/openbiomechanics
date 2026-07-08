@@ -1,0 +1,74 @@
+{
+  "n_pitches": 411,
+  "pattern_counts": {
+    "late_pull": 400,
+    "mixed": 11
+  },
+  "pattern_speed_means": {
+    "late_pull": 84.785,
+    "mixed": 81.736
+  },
+  "sjm_vs_speed": {
+    "r": 0.02466828113559591,
+    "p_value": 0.61802163897452,
+    "n": 411
+  },
+  "sjm_x_vs_speed": {
+    "r": -0.07849654389054718,
+    "p_value": 0.11206560398414542,
+    "n": 411
+  },
+  "sjm_y_vs_speed": {
+    "r": 0.15215441058065096,
+    "p_value": 0.001979563282324828,
+    "n": 411
+  },
+  "sjm_z_vs_speed": {
+    "r": -0.031010750863921733,
+    "p_value": 0.5307108959200391,
+    "n": 411
+  },
+  "fp_local_x_vs_speed": {
+    "r": -0.10103386024915935,
+    "p_value": 0.04063098515523975,
+    "n": 411
+  },
+  "fp_local_y_vs_speed": {
+    "r": 0.23778021861094348,
+    "p_value": 1.082714064677468e-06,
+    "n": 411
+  },
+  "fp_local_z_vs_speed": {
+    "r": 0.14209954200777344,
+    "p_value": 0.003893159926104533,
+    "n": 411
+  },
+  "br_local_x_vs_speed": {
+    "r": 0.06915017833425548,
+    "p_value": 0.1617240261428882,
+    "n": 411
+  },
+  "br_local_y_vs_speed": {
+    "r": 0.23364504015396537,
+    "p_value": 1.6783927018319911e-06,
+    "n": 411
+  },
+  "br_local_z_vs_speed": {
+    "r": 0.039323350929331966,
+    "p_value": 0.4265627979355331,
+    "n": 411
+  },
+  "peak_disp_m_vs_speed": {
+    "r": 0.11965167840829097,
+    "p_value": 0.015222079548083701,
+    "n": 411
+  },
+  "final_disp_m_vs_speed": {
+    "r": 0.14236010757888995,
+    "p_value": 0.003827503070266469,
+    "n": 411
+  },
+  "curve_plot": "D:\\baseball\\pitching\\obp\\baseball_pitching\\imgs\\nonthrowing_shoulder_local_trajectory_patterns.png",
+  "sjm_scatter": "D:\\baseball\\pitching\\obp\\baseball_pitching\\imgs\\nonthrowing_shoulder_sjm_vs_speed.png",
+  "late_scatter": "D:\\baseball\\pitching\\obp\\baseball_pitching\\imgs\\nonthrowing_shoulder_final_disp_vs_speed.png"
+}
