@@ -281,6 +281,85 @@ def bootstrap_intervals(
     }
 
 
+def bootstrap_pitch_cluster_intervals(
+    pitch_data: pd.DataFrame,
+    exposure: str,
+    mediator: str,
+    repetitions: int = BOOTSTRAP_REPS,
+) -> dict[str, tuple[float, float]]:
+    """Bootstrap pitch-level models by resampling athletes as whole clusters."""
+    rng = np.random.default_rng(RANDOM_SEED)
+    columns = [exposure, mediator, OUTCOME, *COVARIATES]
+    clusters = [
+        group[columns].dropna().to_numpy(dtype=float)
+        for _, group in pitch_data.groupby("user", sort=False)
+    ]
+    estimates = []
+
+    for _ in range(repetitions):
+        sampled_clusters = rng.integers(0, len(clusters), size=len(clusters))
+        sample = np.vstack([clusters[index] for index in sampled_clusters])
+        means = sample.mean(axis=0)
+        standard_deviations = sample.std(axis=0, ddof=1)
+        if np.any(standard_deviations == 0):
+            continue
+        z = (sample - means) / standard_deviations
+
+        x, m, y = z[:, 0], z[:, 1], z[:, 2]
+        covariates = z[:, 3:]
+        mediator_design = np.column_stack([np.ones(len(z)), x, covariates])
+        outcome_design = np.column_stack([np.ones(len(z)), x, m, covariates])
+        total_design = np.column_stack([np.ones(len(z)), x, covariates])
+
+        try:
+            mediator_beta = np.linalg.lstsq(
+                mediator_design, m, rcond=None
+            )[0]
+            outcome_beta = np.linalg.lstsq(outcome_design, y, rcond=None)[0]
+            total_beta = np.linalg.lstsq(total_design, y, rcond=None)[0]
+        except np.linalg.LinAlgError:
+            continue
+
+        path_a = mediator_beta[1]
+        path_b = outcome_beta[2]
+        indirect = path_a * path_b
+        direct = outcome_beta[1]
+        total = total_beta[1]
+        total_residuals = y - total_design @ total_beta
+        outcome_residuals = y - outcome_design @ outcome_beta
+        total_sum_squares = np.square(y - y.mean()).sum()
+        estimates.append(
+            {
+                "path_a": path_a,
+                "path_b": path_b,
+                "indirect_effect": indirect,
+                "direct_effect": direct,
+                "total_effect": total,
+                "proportion_mediated": indirect / total
+                if total != 0
+                else np.nan,
+                "total_model_r_squared": 1
+                - np.square(total_residuals).sum() / total_sum_squares,
+                "outcome_model_r_squared": 1
+                - np.square(outcome_residuals).sum() / total_sum_squares,
+            }
+        )
+
+    if len(estimates) < repetitions * 0.95:
+        raise RuntimeError(
+            f"Only {len(estimates)} of {repetitions} cluster bootstrap samples succeeded"
+        )
+
+    bootstrap = pd.DataFrame(estimates)
+    return {
+        column: (
+            bootstrap[column].quantile(0.025),
+            bootstrap[column].quantile(0.975),
+        )
+        for column in bootstrap.columns
+    }
+
+
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     pitch_data, athlete_data = prepare_athlete_data()
@@ -322,6 +401,54 @@ def main() -> None:
     results_frame = pd.DataFrame(results)
     results_frame.to_csv(OUTPUT_DIR / "mediation_results.csv", index=False)
 
+    pitch_results = []
+    naive_pitch_results = []
+    for exposure_name, exposure in EXPOSURES.items():
+        for mediator_name, mediator in MEDIATORS.items():
+            point = estimate_paths(pitch_data, exposure, mediator)
+            intervals = bootstrap_pitch_cluster_intervals(
+                pitch_data, exposure, mediator
+            )
+            row = {
+                "exposure": exposure_name,
+                "exposure_column": exposure,
+                "mediator": mediator_name,
+                "mediator_column": mediator,
+                **point,
+                "n_pitches": len(pitch_data),
+                "n_athletes": pitch_data["user"].nunique(),
+            }
+            for metric, (lower, upper) in intervals.items():
+                row[f"{metric}_ci_lower"] = lower
+                row[f"{metric}_ci_upper"] = upper
+            pitch_results.append(row)
+
+            naive_intervals = bootstrap_intervals(
+                pitch_data, exposure, mediator
+            )
+            naive_row = {
+                "exposure": exposure_name,
+                "exposure_column": exposure,
+                "mediator": mediator_name,
+                "mediator_column": mediator,
+                **point,
+                "n_pitches": len(pitch_data),
+                "n_athletes": pitch_data["user"].nunique(),
+            }
+            for metric, (lower, upper) in naive_intervals.items():
+                naive_row[f"{metric}_ci_lower"] = lower
+                naive_row[f"{metric}_ci_upper"] = upper
+            naive_pitch_results.append(naive_row)
+
+    pitch_results_frame = pd.DataFrame(pitch_results)
+    pitch_results_frame.to_csv(
+        OUTPUT_DIR / "pitch_level_clustered_mediation_results.csv", index=False
+    )
+    naive_pitch_results_frame = pd.DataFrame(naive_pitch_results)
+    naive_pitch_results_frame.to_csv(
+        OUTPUT_DIR / "pitch_level_naive_bootstrap_sensitivity.csv", index=False
+    )
+
     display_columns = [
         "exposure",
         "mediator",
@@ -339,6 +466,18 @@ def main() -> None:
         "proportion_mediated_ci_upper",
     ]
     print(results_frame[display_columns].to_string(index=False, float_format="%.4f"))
+    print("\nPitch-level models with athlete-cluster bootstrap:")
+    print(
+        pitch_results_frame[display_columns].to_string(
+            index=False, float_format="%.4f"
+        )
+    )
+    print("\nNaive pitch-level bootstrap (sensitivity only; pitches treated as independent):")
+    print(
+        naive_pitch_results_frame[display_columns].to_string(
+            index=False, float_format="%.4f"
+        )
+    )
     print(f"\nOutputs written to: {OUTPUT_DIR}")
 
 
