@@ -3,6 +3,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from scipy import stats
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
+from sklearn.model_selection import KFold, cross_val_predict
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -23,6 +29,26 @@ def correlation(frame, x, y, controls=()):
         y_values = residualize(y_values, covariates)
     r, p = stats.pearsonr(x_values, y_values)
     return len(clean), r, p
+
+
+def multivariable_summary(frame, target, predictors):
+    clean = frame[[target, *predictors]].replace([np.inf, -np.inf], np.nan)
+    y = clean[target].to_numpy(float)
+    x = clean[predictors].to_numpy(float)
+    model = make_pipeline(
+        SimpleImputer(strategy="median"),
+        StandardScaler(),
+        LinearRegression(),
+    )
+    model.fit(x, y)
+    fitted = model.predict(x)
+    r2 = r2_score(y, fitted)
+    n = len(y)
+    k = len(predictors)
+    adjusted_r2 = 1 - (1 - r2) * (n - 1) / (n - k - 1)
+    folds = KFold(n_splits=10, shuffle=True, random_state=20260729)
+    cross_validated = cross_val_predict(model, x, y, cv=folds)
+    return r2, adjusted_r2, r2_score(y, cross_validated)
 
 
 def build_pitch_metrics():
@@ -175,6 +201,45 @@ def main():
     ]:
         result = correlation(athlete, "session_mass_kg", variable)
         print(f"{variable:30s} r={result[1]: .4f}, p={result[2]:.4f}")
+
+    feature_sets = {
+        "shoulder_stp_fp_br": [
+            "max_shoulder_internal_rotational_velo",
+            "rotation_hip_shoulder_separation_fp",
+            "max_shoulder_external_rotation",
+            "max_torso_rotational_velo",
+            "shoulder_horizontal_abduction_fp",
+            "delta_omega_sq",
+        ],
+        "shoulder_transfer_fp_br": [
+            "shoulder_horizontal_abduction_fp",
+            "rotation_hip_shoulder_separation_fp",
+            "torso_anterior_tilt_br",
+            "torso_anterior_tilt_mer",
+            "max_shoulder_external_rotation",
+            "torso_rotation_fp",
+            "max_shoulder_horizontal_abduction",
+            "max_torso_rotational_velo",
+            "delta_omega_sq",
+        ],
+    }
+    print("\nExploratory multivariable summaries")
+    print("10-fold CV uses a fixed shuffled split; features were preselected on this dataset.")
+    for target, features in feature_sets.items():
+        print(f"\nTarget: {target}")
+        for label, predictors in [
+            ("mass only", ["session_mass_kg"]),
+            ("listed features", features),
+            ("mass + listed features", ["session_mass_kg", *features]),
+        ]:
+            r2, adjusted_r2, cross_validated_r2 = multivariable_summary(
+                athlete, target, predictors
+            )
+            print(
+                f"{label:24s} k={len(predictors):2d} "
+                f"R2={r2:.4f} adjusted_R2={adjusted_r2:.4f} "
+                f"10-fold_CV_R2={cross_validated_r2:.4f}"
+            )
 
 
 if __name__ == "__main__":
