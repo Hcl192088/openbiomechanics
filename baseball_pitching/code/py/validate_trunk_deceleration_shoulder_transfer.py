@@ -241,6 +241,31 @@ def main():
                 f"10-fold_CV_R2={cross_validated_r2:.4f}"
             )
 
+    reduced_total_base = [
+        "shoulder_horizontal_abduction_fp",
+        "rotation_hip_shoulder_separation_fp",
+        "torso_anterior_tilt_br",
+        "max_shoulder_external_rotation",
+        "torso_rotation_fp",
+    ]
+    print("\nDeduplicated total-transfer models")
+    print("Removed max shoulder HAb and MER trunk tilt because |r| > 0.80.")
+    for label, final_feature in [
+        ("retain max torso velocity", "max_torso_rotational_velo"),
+        ("retain delta omega squared", "delta_omega_sq"),
+    ]:
+        predictors = [*reduced_total_base, final_feature]
+        r2, adjusted_r2, cross_validated_r2 = multivariable_summary(
+            athlete,
+            "shoulder_transfer_fp_br",
+            ["session_mass_kg", *predictors],
+        )
+        print(
+            f"{label:28s} k={len(predictors) + 1:2d} "
+            f"R2={r2:.4f} adjusted_R2={adjusted_r2:.4f} "
+            f"10-fold_CV_R2={cross_validated_r2:.4f}"
+        )
+
 
 if __name__ == "__main__":
     main()
