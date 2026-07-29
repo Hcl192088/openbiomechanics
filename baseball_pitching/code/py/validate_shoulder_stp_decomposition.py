@@ -308,6 +308,32 @@ def main():
             f"partial-mass r={partial_power.statistic:.4f}, "
             f"p={partial_power.pvalue:.4f}"
         )
+    decel_residual = sm.OLS(
+        athlete["delta_omega_sq"],
+        sm.add_constant(athlete["session_mass_kg"]),
+    ).fit().resid
+    component_residuals = {}
+    for component in [
+        "thorax_limited_power_sum",
+        "upper_arm_limited_power_sum",
+        "total_limited_power_sum",
+    ]:
+        component_residuals[component] = sm.OLS(
+            athlete[component],
+            sm.add_constant(athlete["session_mass_kg"]),
+        ).fit().resid
+    component_covariances = {
+        component: np.cov(decel_residual, residual, ddof=1)[0, 1]
+        for component, residual in component_residuals.items()
+    }
+    total_covariance = component_covariances["total_limited_power_sum"]
+    print(
+        "Mass-adjusted covariance decomposition of delta omega squared vs "
+        "total limited power sum: "
+        f"thorax component={component_covariances['thorax_limited_power_sum'] / total_covariance:.3%}, "
+        f"upper-arm component={component_covariances['upper_arm_limited_power_sum'] / total_covariance:.3%}, "
+        "total=100.000%"
+    )
     athlete["upper_arm_majority"] = (
         athlete["upper_arm_smaller_proportion"] > 0.5
     ).astype(int)
