@@ -97,6 +97,14 @@ transfer magnitude = min(abs(thorax_stp), abs(upper_arm_stp))
 
 功率累積確認時間占比會高估末段軀幹限制的重要性。FP至BR前30%只累積22.9%的transfer power；50–80%單獨貢獻44.6%；至MER已累積88.5%，MER後只剩11.5%。MER前的累積功率中60.3%由上臂側限制，MER後則88.9%由軀幹側限制。換成全部transfer power的四分法，最大單一區塊是「MER前＋上臂限制」53.4%，其次為「MER前＋軀幹限制」35.2%，「MER後＋軀幹限制」10.2%，「MER後＋上臂限制」1.3%。因此能量大宗確實落在MER前的上臂限制區間；末段雖幾乎都由軀幹限制，但剩餘可轉移功率已少。
 
+### 減速代理與STP功率的SPM時序
+
+以100位投手為獨立分析單位，每球FP至BR正規化101點後先在投手內平均。預測量為投手平均 `omega_peak^2 - omega_BR^2`，結果曲線為正向STP transfer power，SPM GLM同時控制體重。總STP沒有顯著cluster；拆開限制端後，只有上臂限制功率在FP–BR 52.74–63.87%出現顯著正相關cluster（cluster p = 0.000047，區間平均partial r = 0.354，峰值partial r = 0.378，位於57%）。即使對總STP、上臂限制、軀幹限制三個SPM檢定作Bonferroni校正，該cluster仍成立（adjusted p約0.00014）。軀幹限制功率沒有顯著cluster。
+
+此結果將「能量增加」操作化為瞬時正向STP功率，而不是已累積能量。顯著區間早於MER中位77.18%（IQR 74.66–78.83%），也正位於上臂限制比例及整體transfer power都較高的中段。解讀為：減速代理較大的投手，主要在FP–BR約53–64%的上臂限制階段具有更高STP功率；總STP曲線因軀幹限制部分方向相反而未形成顯著cluster。
+
+![Trunk deceleration proxy and STP timing](../imgs/trunk_deceleration_stp_spm.png)
+
 ## 限制端分組與球速
 
 以每位投手各球的限制端比例先取平均，再依上臂側較小比例是否高於50%分組：
