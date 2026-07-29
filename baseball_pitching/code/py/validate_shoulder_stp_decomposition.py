@@ -65,6 +65,83 @@ def main():
         f"max_abs_error={generation_error.max():.9f} W"
     )
 
+    moments = pd.read_csv(
+        ROOT / "data" / "full_sig" / "forces_moments.csv",
+        usecols=[
+            "session_pitch",
+            "time",
+            "shoulder_thorax_moment_x",
+            "shoulder_thorax_moment_y",
+            "shoulder_thorax_moment_z",
+        ],
+    )
+    torso_velos = pd.read_csv(
+        ROOT / "data" / "full_sig" / "joint_velos.csv",
+        usecols=[
+            "session_pitch",
+            "time",
+            "torso_velo_x",
+            "torso_velo_y",
+            "torso_velo_z",
+        ],
+    )
+    axis_power = (
+        data[
+            [
+                "session_pitch",
+                "time",
+                "fp_poi_time",
+                "BR_time",
+                "thorax_stp",
+            ]
+        ]
+        .merge(moments, on=["session_pitch", "time"], validate="one_to_one")
+        .merge(torso_velos, on=["session_pitch", "time"], validate="one_to_one")
+    )
+    for axis in "xyz":
+        axis_power[f"thorax_stp_{axis}"] = (
+            -axis_power[f"shoulder_thorax_moment_{axis}"]
+            * np.radians(axis_power[f"torso_velo_{axis}"])
+        )
+    axis_columns = [f"thorax_stp_{axis}" for axis in "xyz"]
+    axis_power["axis_sum"] = axis_power[axis_columns].sum(axis=1)
+    axis_error = axis_power["thorax_stp"] - axis_power["axis_sum"]
+    print("\nThorax-side shoulder STP axis decomposition")
+    print(
+        "Axis sum vs reconstructed thorax STP: "
+        f"r={axis_power['thorax_stp'].corr(axis_power['axis_sum']):.12f}, "
+        f"MAE={axis_error.abs().mean():.6f} W, "
+        f"max_abs_error={axis_error.abs().max():.6f} W"
+    )
+    axis_window = axis_power[
+        (axis_power["time"] >= axis_power["fp_poi_time"])
+        & (axis_power["time"] <= axis_power["BR_time"])
+    ].copy()
+    dominant_axis = (
+        axis_window[axis_columns]
+        .abs()
+        .idxmax(axis=1)
+        .str[-1]
+        .value_counts(normalize=True)
+    )
+    absolute_axis_share = (
+        axis_window[axis_columns].abs().sum()
+        / axis_window[axis_columns].abs().to_numpy().sum()
+    )
+    print(
+        "Largest absolute axis-power component by FP-BR frame: "
+        + ", ".join(
+            f"{axis}={dominant_axis.get(axis, 0):.3%}" for axis in "xyz"
+        )
+    )
+    print(
+        "Share of summed absolute axis power over FP-BR: "
+        + ", ".join(
+            f"{axis}={absolute_axis_share[f'thorax_stp_{axis}']:.3%}"
+            for axis in "xyz"
+        )
+    )
+
     window = data[
         (data["time"] >= data["fp_poi_time"])
         & (data["time"] <= data["BR_time"])

@@ -23,6 +23,17 @@ thorax_stp   = thorax_dist_seg_pwr + shoulder_energy_transfer_jfp
 upper_arm_stp = upper_arm_prox_seg_pwr - shoulder_energy_transfer_jfp
 ```
 
+### 軀幹側STP的三軸分量
+
+直接以 `-shoulder_thorax_moment_axis * radians(torso_velo_axis)` 重建軀幹側肩部STP。三軸加總與上述 `thorax_stp` 高度對齊（r = 0.99486，MAE = 12.22 W），確認反作用力矩的負號與功率分解方向。
+
+在 FP 至 BR：
+
+- 以每個時間點絕對功率最大的軸判定：z軸88.96%、x軸10.55%、y軸0.49%
+- 以三軸絕對功率總和加權：z軸83.54%、x軸13.49%、y軸2.98%
+
+因此z軸不只是角速度最大，也是軀幹側肩部STP的主導功率分量。不能再把「減速代理只看z軸、漏掉其他軸」列為低相關的主要解釋；主要落差應放在軀幹淨動能變化仍同時受到近端輸入，以及實際transfer常由上臂側較小端限制。
+
 當兩側 STP 異號時：
 
 ```text
