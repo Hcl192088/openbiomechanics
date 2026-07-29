@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from scipy import stats
+import statsmodels.api as sm
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
@@ -148,7 +149,9 @@ def build_pitch_metrics():
         pitch.merge(pd.DataFrame(energy_rows), on="session_pitch", validate="one_to_one")
         .merge(poi[columns], on="session_pitch", validate="one_to_one")
         .merge(
-            metadata[["session_pitch", "session", "session_mass_kg"]],
+            metadata[
+                ["session_pitch", "session", "session_mass_kg", "pitch_speed_mph"]
+            ],
             on="session_pitch",
             validate="one_to_one",
         )
@@ -285,6 +288,47 @@ def main():
             f"{label:30s} k={len(predictors) + 1:2d} "
             f"R2={r2:.4f} adjusted_R2={adjusted_r2:.4f} "
             f"10-fold_CV_R2={cross_validated_r2:.4f}"
+        )
+
+    print("\nSquared-speed relationships with pitch speed")
+    for predictor in [
+        "omega_peak_sq",
+        "omega_br_sq",
+        "delta_omega_sq",
+        "fraction_peak_lost",
+    ]:
+        raw = correlation(athlete, predictor, "pitch_speed_mph")
+        partial = correlation(
+            athlete,
+            predictor,
+            "pitch_speed_mph",
+            ("session_mass_kg",),
+        )
+        print(
+            f"{predictor:24s} raw_r={raw[1]: .4f} raw_p={raw[2]:.4f} "
+            f"partial_mass_r={partial[1]: .4f} partial_mass_p={partial[2]:.4f}"
+        )
+
+    joint_predictors = ["session_mass_kg", "omega_peak_sq", "omega_br_sq"]
+    standardized_x = athlete[joint_predictors].apply(
+        lambda column: (column - column.mean()) / column.std(ddof=0)
+    )
+    standardized_y = (
+        athlete["pitch_speed_mph"] - athlete["pitch_speed_mph"].mean()
+    ) / athlete["pitch_speed_mph"].std(ddof=0)
+    joint_speed_model = sm.OLS(
+        standardized_y,
+        sm.add_constant(standardized_x),
+    ).fit()
+    print(
+        "Joint pitch-speed model: "
+        f"R2={joint_speed_model.rsquared:.4f} "
+        f"adjusted_R2={joint_speed_model.rsquared_adj:.4f}"
+    )
+    for predictor in joint_predictors:
+        print(
+            f"{predictor:24s} beta={joint_speed_model.params[predictor]: .4f} "
+            f"p={joint_speed_model.pvalues[predictor]:.4f}"
         )
 
 
