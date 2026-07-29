@@ -14,6 +14,7 @@ def main():
         "session_pitch",
         "time",
         "fp_poi_time",
+        "MER_time",
         "BR_time",
         "thorax_dist_seg_pwr",
         "upper_arm_prox_seg_pwr",
@@ -237,14 +238,60 @@ def main():
     phase_profile = active.groupby("phase_bin", observed=True).agg(
         frames=("upper_arm_smaller", "size"),
         upper_arm_smaller_proportion=("upper_arm_smaller", "mean"),
+        transfer_power_sum=("transfer_magnitude", "sum"),
+        thorax_limited_power_sum=("thorax_limited_power", "sum"),
+        upper_arm_limited_power_sum=("upper_arm_limited_power", "sum"),
+    )
+    phase_profile["transfer_share"] = (
+        phase_profile["transfer_power_sum"]
+        / phase_profile["transfer_power_sum"].sum()
+    )
+    phase_profile["cumulative_transfer_share"] = (
+        phase_profile["transfer_share"].cumsum()
     )
     print("\nBottleneck temporal order over normalized FP-BR")
     for phase, row in phase_profile.iterrows():
         print(
             f"{phase:8s} n={int(row['frames']):4d}, "
             f"thorax={1 - row['upper_arm_smaller_proportion']:.3%}, "
-            f"upper arm={row['upper_arm_smaller_proportion']:.3%}"
+            f"upper arm={row['upper_arm_smaller_proportion']:.3%}, "
+            f"transfer share={row['transfer_share']:.3%}, "
+            f"cumulative={row['cumulative_transfer_share']:.3%}"
         )
+    active["before_or_at_mer"] = active["time"] <= active["MER_time"]
+    pre_mer_power = active.loc[
+        active["before_or_at_mer"], "transfer_magnitude"
+    ].sum()
+    post_mer_power = active.loc[
+        ~active["before_or_at_mer"], "transfer_magnitude"
+    ].sum()
+    pre_mer_arm_power = active.loc[
+        active["before_or_at_mer"] & active["upper_arm_smaller"],
+        "transfer_magnitude",
+    ].sum()
+    post_mer_thorax_power = active.loc[
+        ~active["before_or_at_mer"] & active["thorax_smaller"],
+        "transfer_magnitude",
+    ].sum()
+    total_transfer_power = pre_mer_power + post_mer_power
+    pre_mer_thorax_power = pre_mer_power - pre_mer_arm_power
+    post_mer_arm_power = post_mer_power - post_mer_thorax_power
+    print(
+        "Transfer-power accumulation relative to MER: "
+        f"through MER={pre_mer_power / total_transfer_power:.3%}, "
+        f"after MER={post_mer_power / total_transfer_power:.3%}; "
+        f"upper-arm-limited share within through-MER="
+        f"{pre_mer_arm_power / pre_mer_power:.3%}, "
+        f"thorax-limited share within post-MER="
+        f"{post_mer_thorax_power / post_mer_power:.3%}"
+    )
+    print(
+        "Four-way share of total transfer power: "
+        f"pre-MER upper arm={pre_mer_arm_power / total_transfer_power:.3%}, "
+        f"pre-MER thorax={pre_mer_thorax_power / total_transfer_power:.3%}, "
+        f"post-MER upper arm={post_mer_arm_power / total_transfer_power:.3%}, "
+        f"post-MER thorax={post_mer_thorax_power / total_transfer_power:.3%}"
+    )
 
     sequence_rows = []
     for session_pitch, group in active.groupby("session_pitch", sort=False):
