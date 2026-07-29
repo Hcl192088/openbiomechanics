@@ -158,6 +158,8 @@ def build_pitch_metrics():
 def main():
     pitch = build_pitch_metrics()
     athlete = pitch.groupby("session", as_index=False).mean(numeric_only=True)
+    athlete["omega_peak_sq"] = athlete["omega_peak"] ** 2
+    athlete["omega_br_sq"] = athlete["omega_br"] ** 2
 
     print(f"Pitch rows: {len(pitch)}; athlete rows: {len(athlete)}")
     print(
@@ -262,6 +264,25 @@ def main():
         )
         print(
             f"{label:28s} k={len(predictors) + 1:2d} "
+            f"R2={r2:.4f} adjusted_R2={adjusted_r2:.4f} "
+            f"10-fold_CV_R2={cross_validated_r2:.4f}"
+        )
+
+    print("\nSquared-speed decomposition")
+    for label, squared_features in [
+        ("peak squared", ["omega_peak_sq"]),
+        ("delta squared", ["delta_omega_sq"]),
+        ("peak squared + delta squared", ["omega_peak_sq", "delta_omega_sq"]),
+        ("peak squared + BR squared", ["omega_peak_sq", "omega_br_sq"]),
+    ]:
+        predictors = [*reduced_total_base, *squared_features]
+        r2, adjusted_r2, cross_validated_r2 = multivariable_summary(
+            athlete,
+            "shoulder_transfer_fp_br",
+            ["session_mass_kg", *predictors],
+        )
+        print(
+            f"{label:30s} k={len(predictors) + 1:2d} "
             f"R2={r2:.4f} adjusted_R2={adjusted_r2:.4f} "
             f"10-fold_CV_R2={cross_validated_r2:.4f}"
         )
