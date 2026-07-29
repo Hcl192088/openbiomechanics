@@ -83,10 +83,20 @@ def main():
     active["thorax_to_arm"] = (
         (active["thorax_stp"] < 0) & (active["upper_arm_stp"] > 0)
     )
+    active["thorax_limited_power"] = active["transfer_magnitude"].where(
+        active["thorax_smaller"]
+    )
+    active["upper_arm_limited_power"] = active["transfer_magnitude"].where(
+        active["upper_arm_smaller"]
+    )
 
     per_pitch = active.groupby("session_pitch").agg(
         thorax_smaller_proportion=("thorax_smaller", "mean"),
         upper_arm_smaller_proportion=("upper_arm_smaller", "mean"),
+        thorax_limited_mean_power=("thorax_limited_power", "mean"),
+        upper_arm_limited_mean_power=("upper_arm_limited_power", "mean"),
+        thorax_limited_power_sum=("thorax_limited_power", "sum"),
+        upper_arm_limited_power_sum=("upper_arm_limited_power", "sum"),
     )
     arm_weighted = active.loc[
         active["upper_arm_smaller"], "transfer_magnitude"
@@ -118,21 +128,109 @@ def main():
         f"thorax smaller={1 - arm_weighted:.3%}, "
         f"upper arm smaller={arm_weighted:.3%}"
     )
+    thorax_limited = active.loc[
+        active["thorax_smaller"], "transfer_magnitude"
+    ]
+    arm_limited = active.loc[
+        active["upper_arm_smaller"], "transfer_magnitude"
+    ]
+    print(
+        "Conditional transfer power when limiting: "
+        f"thorax mean={thorax_limited.mean():.3f} W, "
+        f"median={thorax_limited.median():.3f} W; "
+        f"upper arm mean={arm_limited.mean():.3f} W, "
+        f"median={arm_limited.median():.3f} W"
+    )
+    print(
+        "Upper-arm/thorax conditional mean-power ratio: "
+        f"{arm_limited.mean() / thorax_limited.mean():.4f}"
+    )
     print(f"Direction thorax -> upper arm: {active['thorax_to_arm'].mean():.3%}")
 
     metadata = pd.read_csv(
         ROOT / "data" / "metadata.csv",
         usecols=["session_pitch", "session", "session_mass_kg", "pitch_speed_mph"],
     )
+    velos = pd.read_csv(
+        ROOT / "data" / "full_sig" / "joint_velos.csv",
+        usecols=["session_pitch", "time", "torso_velo_z", "fp_poi_time", "BR_time"],
+    )
+    deceleration_rows = []
+    for session_pitch, group in velos.groupby("session_pitch", sort=False):
+        group = group[
+            (group["time"] >= group["fp_poi_time"])
+            & (group["time"] <= group["BR_time"])
+        ].dropna(subset=["torso_velo_z"])
+        if len(group) < 2:
+            continue
+        omega = group.sort_values("time")["torso_velo_z"].abs().to_numpy(float)
+        peak_index = int(np.argmax(omega))
+        deceleration_rows.append(
+            {
+                "session_pitch": session_pitch,
+                "delta_omega_sq": omega[peak_index] ** 2 - omega[-1] ** 2,
+            }
+        )
     pitch_summary = (
         per_pitch.reset_index()
         .merge(metadata, on="session_pitch", validate="one_to_one")
+        .merge(
+            pd.DataFrame(deceleration_rows),
+            on="session_pitch",
+            validate="one_to_one",
+        )
     )
     athlete = pitch_summary.groupby("session", as_index=False).agg(
         upper_arm_smaller_proportion=("upper_arm_smaller_proportion", "mean"),
+        thorax_limited_mean_power=("thorax_limited_mean_power", "mean"),
+        upper_arm_limited_mean_power=("upper_arm_limited_mean_power", "mean"),
+        thorax_limited_power_sum=("thorax_limited_power_sum", "mean"),
+        upper_arm_limited_power_sum=("upper_arm_limited_power_sum", "mean"),
+        delta_omega_sq=("delta_omega_sq", "mean"),
         pitch_speed_mph=("pitch_speed_mph", "mean"),
         session_mass_kg=("session_mass_kg", "mean"),
     )
+    athlete["total_limited_power_sum"] = (
+        athlete["thorax_limited_power_sum"]
+        + athlete["upper_arm_limited_power_sum"]
+    )
+    paired_power = stats.ttest_rel(
+        athlete["upper_arm_limited_mean_power"],
+        athlete["thorax_limited_mean_power"],
+    )
+    print(
+        "Athlete-level paired conditional power: "
+        f"thorax={athlete['thorax_limited_mean_power'].mean():.3f} W, "
+        f"upper arm={athlete['upper_arm_limited_mean_power'].mean():.3f} W, "
+        f"paired p={paired_power.pvalue:.4g}"
+    )
+    for power_variable in [
+        "thorax_limited_mean_power",
+        "upper_arm_limited_mean_power",
+        "thorax_limited_power_sum",
+        "upper_arm_limited_power_sum",
+        "total_limited_power_sum",
+        "upper_arm_smaller_proportion",
+    ]:
+        raw_power = stats.pearsonr(
+            athlete["delta_omega_sq"],
+            athlete[power_variable],
+        )
+        decel_residual = sm.OLS(
+            athlete["delta_omega_sq"],
+            sm.add_constant(athlete["session_mass_kg"]),
+        ).fit().resid
+        power_residual = sm.OLS(
+            athlete[power_variable],
+            sm.add_constant(athlete["session_mass_kg"]),
+        ).fit().resid
+        partial_power = stats.pearsonr(decel_residual, power_residual)
+        print(
+            f"delta omega squared vs {power_variable}: "
+            f"raw r={raw_power.statistic:.4f}, p={raw_power.pvalue:.4f}; "
+            f"partial-mass r={partial_power.statistic:.4f}, "
+            f"p={partial_power.pvalue:.4f}"
+        )
     athlete["upper_arm_majority"] = (
         athlete["upper_arm_smaller_proportion"] > 0.5
     ).astype(int)
