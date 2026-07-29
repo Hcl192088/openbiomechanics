@@ -224,6 +224,83 @@ def main():
     )
     print(f"Direction thorax -> upper arm: {active['thorax_to_arm'].mean():.3%}")
 
+    active["fp_br_phase"] = (
+        (active["time"] - active["fp_poi_time"])
+        / (active["BR_time"] - active["fp_poi_time"])
+    )
+    active["phase_bin"] = pd.cut(
+        active["fp_br_phase"],
+        bins=np.linspace(0, 1, 11),
+        labels=[f"{start}-{start + 10}%" for start in range(0, 100, 10)],
+        include_lowest=True,
+    )
+    phase_profile = active.groupby("phase_bin", observed=True).agg(
+        frames=("upper_arm_smaller", "size"),
+        upper_arm_smaller_proportion=("upper_arm_smaller", "mean"),
+    )
+    print("\nBottleneck temporal order over normalized FP-BR")
+    for phase, row in phase_profile.iterrows():
+        print(
+            f"{phase:8s} n={int(row['frames']):4d}, "
+            f"thorax={1 - row['upper_arm_smaller_proportion']:.3%}, "
+            f"upper arm={row['upper_arm_smaller_proportion']:.3%}"
+        )
+
+    sequence_rows = []
+    for session_pitch, group in active.groupby("session_pitch", sort=False):
+        group = group.sort_values("time")
+        states = np.where(group["upper_arm_smaller"], "A", "T")
+        run_states = [states[0]]
+        switch_phases = []
+        phases = group["fp_br_phase"].to_numpy(float)
+        for index in range(1, len(states)):
+            if states[index] != states[index - 1]:
+                run_states.append(states[index])
+                switch_phases.append(phases[index])
+        sequence_rows.append(
+            {
+                "session_pitch": session_pitch,
+                "start_state": states[0],
+                "end_state": states[-1],
+                "switches": len(run_states) - 1,
+                "run_pattern": "->".join(run_states),
+                "first_switch_phase": (
+                    switch_phases[0] if switch_phases else np.nan
+                ),
+            }
+        )
+    sequences = pd.DataFrame(sequence_rows)
+    print(
+        "Start state: "
+        f"thorax={(sequences['start_state'] == 'T').mean():.3%}, "
+        f"upper arm={(sequences['start_state'] == 'A').mean():.3%}; "
+        "end state: "
+        f"thorax={(sequences['end_state'] == 'T').mean():.3%}, "
+        f"upper arm={(sequences['end_state'] == 'A').mean():.3%}"
+    )
+    print(
+        "Raw switch count per pitch: "
+        f"median={sequences['switches'].median():.1f}, "
+        f"IQR=[{sequences['switches'].quantile(0.25):.1f}, "
+        f"{sequences['switches'].quantile(0.75):.1f}], "
+        f"range=[{sequences['switches'].min()}, {sequences['switches'].max()}]"
+    )
+    simple_patterns = sequences["run_pattern"].value_counts()
+    for pattern in ["T", "A", "T->A", "A->T"]:
+        print(
+            f"Pattern {pattern:4s}: "
+            f"{int(simple_patterns.get(pattern, 0)):3d} "
+            f"({simple_patterns.get(pattern, 0) / len(sequences):.3%})"
+        )
+    print(
+        "Multiple-switch pitches: "
+        f"{(sequences['switches'] >= 2).sum()} "
+        f"({(sequences['switches'] >= 2).mean():.3%})"
+    )
+    print("Most common raw run patterns:")
+    for pattern, count in simple_patterns.head(8).items():
+        print(f"  {pattern:20s} {count:3d} ({count / len(sequences):.3%})")
+
     metadata = pd.read_csv(
         ROOT / "data" / "metadata.csv",
         usecols=["session_pitch", "session", "session_mass_kg", "pitch_speed_mph"],
