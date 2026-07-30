@@ -36,7 +36,30 @@ upper_arm_stp = upper_arm_prox_seg_pwr - shoulder_energy_transfer_jfp
 
 因此z軸不只是角速度最大，也是軀幹側肩部STP的主導功率分量。不能再把「減速代理只看z軸、漏掉其他軸」列為低相關的主要解釋。真正尚未直接驗證的是軀幹節段旋轉動能下降；目前算到的仍是肩關節軀幹側力矩功率，以及經 `min()` 後的肩部transfer。
 
-但z軸占軀幹側肩部STP的83.5%，仍不代表「軀幹旋轉動能的83.5%成為STP」。前者分母是肩關節軀幹側三軸力矩功率絕對值；後者需要軀幹節段慣量張量與三維角速度計算 `K = 0.5 * omega' * I * omega`。目前full-signal CSV、metadata、動態C3D與model C3D均未輸出軀幹慣量，專案也只有CMO輸出腳本、沒有建模腳本可重建個別慣量。因此現有資料只能驗證肩部功率分解，不能聲稱已直接計算軀幹能量占STP多少。
+但z軸占軀幹側肩部STP的83.5%，仍不代表「軀幹旋轉動能的83.5%成為STP」。前者分母是肩關節軀幹側三軸力矩功率絕對值；後者需要軀幹節段慣量張量與三維角速度計算 `K = 0.5 * omega' * I * omega`。目前full-signal CSV、metadata、動態C3D與model C3D均未直接輸出軀幹慣量，但專案其實包含原始建模檔 `baseball_pitching/code/v3d/model/v6_model_hybrid_lm.mdh`，可配合靜態model C3D在Visual3D重建個別慣量；先前「只有CMO輸出腳本、沒有建模檔」的判斷錯誤，已更正。
+
+### 原始模型如何計算軀幹慣量
+
+OpenBiomechanics的CMZ建立流程先套用 `v6_model_hybrid_lm.mdh`，再執行Filter、Events與 `CMO.v3s`。MDH將軀幹命名為Visual3D預設節段 `RTA`（Thorax/Ab），而 `MASS`、`GEOMETRY`、`IXX`、`IYY`、`IZZ` 均未自訂，因此沿用Visual3D的Dempster節段質量與Hanavan幾何慣量預設值。
+
+原始模型對每位投手使用：
+
+```text
+m_RTA = 0.355 * body_mass
+d = 0.5 * distance(C7, CLAV)
+r = 0.5 * distance(RSHO, LSHO)
+L = distance(midpoint(CLAV, C7), midpoint(STRN, T10))
+```
+
+其中 `d` 是橢圓柱的前後深度半徑，`r` 是肩寬方向半徑，`L` 是軀幹節段長度。Visual3D的橢圓柱公式為：
+
+```text
+Ixx = m_RTA * (3*d^2 + L^2) / 12
+Iyy = m_RTA * (3*r^2 + L^2) / 12
+Izz = m_RTA * (d^2 + r^2) / 4
+```
+
+因此原始逆動力學中的 `I` 不是只由體重決定，也不是直接使用 `mass * height^2`；它同時包含體重與每位投手靜態校正得到的軀幹長度、肩寬和前後深度。現有 `mass * delta_omega_sq` 與 `mass * height^2 * delta_omega_sq` 只能視為粗略尺度代理。若要直接重算軀幹動能下降，應由原始Visual3D模型匯出每位投手的RTA慣量，並讓角速度與慣量張量使用同一節段座標系。
 
 若暫以體重近似 `I_T`，使用 `mass * (omega_peak^2 - omega_BR^2)`，與重建STP的原始相關升至r = 0.376（R² = 0.142）；以 `mass * height^2`作慣量尺度時為r = 0.447（R² = 0.200）。但目標能量本身與體重高度相關，因此主要是共享體型訊號：體重基準模型已解釋STP的32.8%，加入質量加權下降代理後只額外增加3.5%（p = 0.023）；以體重與身高為基準，`mass * height^2`版本也只額外增加3.6%（p = 0.022）。對總肩部轉移，兩種代理的額外R²分別為4.0%與4.4%。所以「直接乘體重」會提高表面相關，但在體型之外仍只有小幅獨立解釋力；它仍不是個別軀幹慣量的實測值。
 
@@ -158,3 +181,5 @@ min(abs(thorax_dist_seg_pwr), abs(upper_arm_prox_seg_pwr))
 - 腳本：`baseball_pitching/code/py/validate_shoulder_stp_decomposition.py`
 - 資料：`baseball_pitching/data/full_sig/energy_flow.csv`
 - 公式來源：官方 `baseball_pitching/code/v3d/CMO.v3s` 中，segment power 定義為 JFP 與 STP 相加。
+- 慣量模型：`baseball_pitching/code/v3d/model/v6_model_hybrid_lm.mdh`
+- Visual3D文件：[Build CMZs](https://wiki.has-motion.com/doku.php?id=other%3Ainspect3d%3Atutorials%3Abuild_cmzs)、[Segment Mass](https://wiki.has-motion.com/doku.php?id=visual3d%3Adocumentation%3Amodeling%3Asegments%3Asegment_mass)、[Segment Inertia](https://wiki.has-motion.com/doku.php?id=visual3d%3Adocumentation%3Amodeling%3Asegments%3Asegment_inertia)、[Segment Properties Examples](https://www.wiki.has-motion.com/doku.php?id=visual3d%3Adocumentation%3Amodeling%3Asegments%3Asegment_properties_example)
