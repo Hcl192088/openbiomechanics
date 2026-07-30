@@ -150,7 +150,13 @@ def build_pitch_metrics():
         .merge(poi[columns], on="session_pitch", validate="one_to_one")
         .merge(
             metadata[
-                ["session_pitch", "session", "session_mass_kg", "pitch_speed_mph"]
+                [
+                    "session_pitch",
+                    "session",
+                    "session_mass_kg",
+                    "session_height_m",
+                    "pitch_speed_mph",
+                ]
             ],
             on="session_pitch",
             validate="one_to_one",
@@ -195,6 +201,48 @@ def main():
                 f"partial-mass r={partial[1]: .4f}, p={partial[2]:.4f}; "
                 f"J/kg r={ratio[1]: .4f}, p={ratio[2]:.4f}; "
                 f"J/kg+mass r={predictor_partial[1]: .4f}, p={predictor_partial[2]:.4f}"
+            )
+
+    athlete["mass_delta_omega_sq"] = (
+        athlete["session_mass_kg"] * athlete["delta_omega_sq"]
+    )
+    athlete["mass_height_sq_delta_omega_sq"] = (
+        athlete["session_mass_kg"]
+        * athlete["session_height_m"] ** 2
+        * athlete["delta_omega_sq"]
+    )
+    print("\nMass-weighted rotational-energy proxies")
+    for target in targets:
+        print(f"\nTarget: {target}")
+        for label, baseline, proxy in [
+            (
+                "mass * delta omega squared",
+                ["session_mass_kg"],
+                "mass_delta_omega_sq",
+            ),
+            (
+                "mass * height^2 * delta omega squared",
+                ["session_mass_kg", "session_height_m"],
+                "mass_height_sq_delta_omega_sq",
+            ),
+        ]:
+            raw = correlation(athlete, proxy, target)
+            baseline_model = sm.OLS(
+                athlete[target],
+                sm.add_constant(athlete[baseline]),
+            ).fit()
+            full_model = sm.OLS(
+                athlete[target],
+                sm.add_constant(athlete[[*baseline, proxy]]),
+            ).fit()
+            print(
+                f"{label:42s} raw_r={raw[1]: .4f}, "
+                f"raw_R2={raw[1] ** 2:.4f}, raw_p={raw[2]:.4f}; "
+                f"baseline_R2={baseline_model.rsquared:.4f}, "
+                f"full_R2={full_model.rsquared:.4f}, "
+                f"incremental_R2="
+                f"{full_model.rsquared - baseline_model.rsquared:.4f}, "
+                f"proxy_p={full_model.pvalues[proxy]:.4f}"
             )
 
     print("\nMass associations")
