@@ -61,6 +61,52 @@ Izz = m_RTA * (d^2 + r^2) / 4
 
 因此原始逆動力學中的 `I` 不是只由體重決定，也不是直接使用 `mass * height^2`；它同時包含體重與每位投手靜態校正得到的軀幹長度、肩寬和前後深度。現有 `mass * delta_omega_sq` 與 `mass * height^2 * delta_omega_sq` 只能視為粗略尺度代理。若要直接重算軀幹動能下降，應由原始Visual3D模型匯出每位投手的RTA慣量，並讓角速度與慣量張量使用同一節段座標系。
 
+### 100位投手的慣量重建與近似誤差
+
+2026-08-11依照上述MDH定義，從100個session各自的靜態model C3D重建RTA慣量。所有100個模型均有必要標記；其中session 1759的標記帶有已確認的 `Skeleton_001_` 命名空間，明確移除此前綴後使用，沒有排除投手。model C3D為11幀、座標單位為公尺，六個軀幹標記以有效幀平均位置代表靜態位置；全部模型中單一標記相對平均位置的最大偏移為1.87 mm。
+
+重建結果：
+
+```text
+Izz平均 = 0.2241 kg*m^2
+Izz SD   = 0.0477 kg*m^2
+Izz範圍 = 0.1324–0.3606 kg*m^2
+
+平均軀幹長度 L = 0.2593 m
+平均前後深度半徑 d = 0.0824 m
+平均肩寬半徑 r = 0.1438 m
+```
+
+`Izz`的幾何項為 `d^2 + r^2`；其中肩寬半徑平方平均占75.1%。身高與 `d`、`r` 的相關只有r = 0.092與0.165，因此身高不是這批投手橫向軀幹尺寸的良好替代量。
+
+若靜態標記真的不存在，可將
+
+```text
+Izz = m_RTA * kz^2
+m_RTA = 0.355 * body_mass
+```
+
+中的迴轉半徑固定為本樣本估計的 `kz = 0.08372 m`，得到：
+
+```text
+Izz ≈ 0.0024884 * body_mass_kg
+```
+
+留一投手交叉驗證顯示，固定迴轉半徑近似的prediction R² = 0.612、中位絕對百分比誤差9.1%、第95百分位誤差23.1%。相較之下，最佳尺度係數的身高模型：
+
+```text
+Izz ≈ 0.00071497 * body_mass_kg * height_m^2
+```
+
+其留一投手prediction R² = 0.545、中位誤差9.7%、第95百分位誤差25.7%。因此本資料的優先順序是：個人靜態標記重建 > 固定迴轉半徑乘節段質量 > `mass * height^2`。後兩者只適用於缺少model C3D的敏感度分析，不能替代主分析。
+
+由於 `CMO.v3s` 將 `TORSO_ANGULAR_VELOCITY` 解析在RTA座標系，z軸旋轉動能下降可以直接用同座標系的 `Izz`，但角速度必須先由deg/s轉成rad/s：
+
+```text
+omega_rad_s = omega_deg_s * pi / 180
+delta_Kz_J = 0.5 * Izz * (omega_peak_rad_s^2 - omega_BR_rad_s^2)
+```
+
 若暫以體重近似 `I_T`，使用 `mass * (omega_peak^2 - omega_BR^2)`，與重建STP的原始相關升至r = 0.376（R² = 0.142）；以 `mass * height^2`作慣量尺度時為r = 0.447（R² = 0.200）。但目標能量本身與體重高度相關，因此主要是共享體型訊號：體重基準模型已解釋STP的32.8%，加入質量加權下降代理後只額外增加3.5%（p = 0.023）；以體重與身高為基準，`mass * height^2`版本也只額外增加3.6%（p = 0.022）。對總肩部轉移，兩種代理的額外R²分別為4.0%與4.4%。所以「直接乘體重」會提高表面相關，但在體型之外仍只有小幅獨立解釋力；它仍不是個別軀幹慣量的實測值。
 
 當兩側 STP 異號時：
@@ -179,6 +225,7 @@ min(abs(thorax_dist_seg_pwr), abs(upper_arm_prox_seg_pwr))
 
 - 日期：2026-07-29
 - 腳本：`baseball_pitching/code/py/validate_shoulder_stp_decomposition.py`
+- 慣量重建腳本：`baseball_pitching/code/py/calculate_thorax_inertia.py`
 - 資料：`baseball_pitching/data/full_sig/energy_flow.csv`
 - 公式來源：官方 `baseball_pitching/code/v3d/CMO.v3s` 中，segment power 定義為 JFP 與 STP 相加。
 - 慣量模型：`baseball_pitching/code/v3d/model/v6_model_hybrid_lm.mdh`
