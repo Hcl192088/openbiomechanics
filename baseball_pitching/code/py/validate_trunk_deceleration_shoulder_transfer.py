@@ -98,6 +98,7 @@ def build_pitch_metrics():
                 "session_pitch": session_pitch,
                 "omega_peak": post_omega[0],
                 "omega_br": post_omega[-1],
+                "torso_peak_time": post_time[0],
                 "delta_omega": total_drop,
                 "integrated_negative_domega": integrated_negative,
                 "delta_omega_sq": post_omega[0] ** 2 - post_omega[-1] ** 2,
@@ -107,6 +108,7 @@ def build_pitch_metrics():
         )
 
     pitch = pd.DataFrame(rows)
+    peak_time_by_pitch = pitch.set_index("session_pitch")["torso_peak_time"]
 
     energy_rows = []
     for session_pitch, group in energy.groupby("session_pitch", sort=False):
@@ -123,12 +125,25 @@ def build_pitch_metrics():
         time = window["time"].to_numpy(float)
         stp = np.trapezoid(window["shoulder_energy_transfer_stp"], time)
         jfp = np.trapezoid(window["shoulder_energy_transfer_jfp"], time)
+        peak_time = float(peak_time_by_pitch.loc[session_pitch])
+        peak_window = window[window["time"] >= peak_time]
+        if len(peak_window) < 2:
+            continue
+        peak_window_time = peak_window["time"].to_numpy(float)
+        stp_peak_br = np.trapezoid(
+            peak_window["shoulder_energy_transfer_stp"], peak_window_time
+        )
+        jfp_peak_br = np.trapezoid(
+            peak_window["shoulder_energy_transfer_jfp"], peak_window_time
+        )
         energy_rows.append(
             {
                 "session_pitch": session_pitch,
                 "shoulder_stp_fp_br": stp,
                 "shoulder_jfp_fp_br": jfp,
                 "shoulder_total_reconstructed": stp + jfp,
+                "shoulder_stp_peak_br": stp_peak_br,
+                "shoulder_total_peak_br": stp_peak_br + jfp_peak_br,
             }
         )
 
@@ -167,6 +182,15 @@ def build_pitch_metrics():
 def main():
     pitch = build_pitch_metrics()
     athlete = pitch.groupby("session", as_index=False).mean(numeric_only=True)
+    inertia = pd.read_csv(
+        ROOT / "data" / "poi" / "thorax_inertia_estimates.csv",
+        usecols=["session", "rta_izz_kg_m2"],
+    )
+    athlete = athlete.merge(inertia, on="session", how="inner", validate="one_to_one")
+    if len(athlete) != len(inertia):
+        raise ValueError(
+            f"Inertia join mismatch: athlete rows={len(athlete)}, inertia rows={len(inertia)}"
+        )
     athlete["omega_peak_sq"] = athlete["omega_peak"] ** 2
     athlete["omega_br_sq"] = athlete["omega_br"] ** 2
 
@@ -211,6 +235,21 @@ def main():
         * athlete["session_height_m"] ** 2
         * athlete["delta_omega_sq"]
     )
+    athlete["mass_power_delta_omega_sq"] = (
+        athlete["session_mass_kg"] ** 1.579441 * athlete["delta_omega_sq"]
+    )
+    athlete["delta_kz_j"] = (
+        0.5
+        * athlete["rta_izz_kg_m2"]
+        * athlete["delta_omega_sq"]
+        * (np.pi / 180.0) ** 2
+    )
+    print(
+        "Reconstructed delta Kz J: "
+        f"mean={athlete['delta_kz_j'].mean():.3f}, "
+        f"median={athlete['delta_kz_j'].median():.3f}, "
+        f"range={athlete['delta_kz_j'].min():.3f}..{athlete['delta_kz_j'].max():.3f}"
+    )
     print("\nMass-weighted rotational-energy proxies")
     for target in targets:
         print(f"\nTarget: {target}")
@@ -224,6 +263,16 @@ def main():
                 "mass * height^2 * delta omega squared",
                 ["session_mass_kg", "session_height_m"],
                 "mass_height_sq_delta_omega_sq",
+            ),
+            (
+                "mass^1.579 * delta omega squared",
+                ["session_mass_kg"],
+                "mass_power_delta_omega_sq",
+            ),
+            (
+                "reconstructed 0.5 * Izz * delta omega squared",
+                ["session_mass_kg"],
+                "delta_kz_j",
             ),
         ]:
             raw = correlation(athlete, proxy, target)
@@ -244,6 +293,25 @@ def main():
                 f"{full_model.rsquared - baseline_model.rsquared:.4f}, "
                 f"proxy_p={full_model.pvalues[proxy]:.4f}"
             )
+
+    print("\nExact reconstructed delta Kz partial correlations")
+    for target in [*targets, "shoulder_stp_peak_br", "shoulder_total_peak_br"]:
+        raw = correlation(athlete, "delta_kz_j", target)
+        partial_mass = correlation(
+            athlete, "delta_kz_j", target, ("session_mass_kg",)
+        )
+        partial_mass_height = correlation(
+            athlete,
+            "delta_kz_j",
+            target,
+            ("session_mass_kg", "session_height_m"),
+        )
+        print(
+            f"{target}: raw_r={raw[1]:.4f}, raw_p={raw[2]:.4f}; "
+            f"partial_mass_r={partial_mass[1]:.4f}, p={partial_mass[2]:.4f}; "
+            f"partial_mass_height_r={partial_mass_height[1]:.4f}, "
+            f"p={partial_mass_height[2]:.4f}"
+        )
 
     print("\nMass associations")
     for variable in [
