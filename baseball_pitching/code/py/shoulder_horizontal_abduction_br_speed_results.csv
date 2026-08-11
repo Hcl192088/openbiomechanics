@@ -1,0 +1,3 @@
+﻿br_group,n,mean_mph,sd_mph,median_mph
+BR neutral/adduction (<=0 deg),161,83.72298136645962,4.684925939211908,83.6
+BR horizontal abduction (>0 deg),250,85.3352,4.639134318912923,86.3
