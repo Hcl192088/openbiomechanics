@@ -90,6 +90,11 @@ def main() -> None:
         data=fp_abducted,
     ).fit(cov_type="cluster", cov_kwds={"groups": fp_abducted["session"]})
 
+    threshold_mph = 140.0 / 1.609344
+    fast = data.loc[data["pitch_speed_mph"] >= threshold_mph].copy()
+    if fast.empty:
+        raise RuntimeError("No pitches met the predefined 140 km/h threshold")
+
     group_summary = (
         data.groupby("br_group", sort=False)["pitch_speed_mph"]
         .agg(n="size", mean_mph="mean", sd_mph="std", median_mph="median")
@@ -126,6 +131,17 @@ def main() -> None:
     print(f"FP-abducted maintained adjusted difference={maintained.params[group_term]:.4f} mph, "
           f"p={maintained.pvalues[group_term]:.6g}, "
           f"95% CI={tuple(maintained.conf_int().loc[group_term].round(4))}")
+    print(f">=140 km/h threshold={threshold_mph:.5f} mph, n={len(fast)}, "
+          f"sessions={fast['session'].nunique()}")
+    print(f">=140 km/h BR angle mean={fast['shoulder_horizontal_abduction_br'].mean():.4f}, "
+          f"SD={fast['shoulder_horizontal_abduction_br'].std():.4f}, "
+          f"median={fast['shoulder_horizontal_abduction_br'].median():.4f}, "
+          f"IQR=[{fast['shoulder_horizontal_abduction_br'].quantile(.25):.4f}, "
+          f"{fast['shoulder_horizontal_abduction_br'].quantile(.75):.4f}], "
+          f"range=[{fast['shoulder_horizontal_abduction_br'].min():.4f}, "
+          f"{fast['shoulder_horizontal_abduction_br'].max():.4f}]")
+    print(f">=140 km/h BR abduction >0 n={int((fast['shoulder_horizontal_abduction_br'] > 0).sum())}, "
+          f"proportion={(fast['shoulder_horizontal_abduction_br'] > 0).mean():.4%}")
 
 
 if __name__ == "__main__":
