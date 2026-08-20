@@ -1,0 +1,48 @@
+{
+  "season": 2025,
+  "regular_season_only": true,
+  "pitch_type": "FF",
+  "minimum_ff_pitches_per_pitcher": 100,
+  "savant_rows_downloaded": 678,
+  "merged_rows": 678,
+  "usable_pitchers": 678,
+  "missing_counts_before_drop": {
+    "height_in": 0,
+    "ff_pitch_count": 0,
+    "fastball_velocity_mph": 0,
+    "extension_ft": 0
+  },
+  "height_groups": 16,
+  "height_groups_with_two_or_more_pitchers": 12,
+  "extension_q1_ft": 6.172499999999999,
+  "extension_q3_ft": 6.7275,
+  "primary_model": {
+    "model": "exact_height_fixed_effect",
+    "term": "extension_ft",
+    "n": 678,
+    "coefficient_mph": -0.15959850325572678,
+    "ci95_low_mph": -0.6883881329107913,
+    "ci95_high_mph": 0.3691911263993377,
+    "p_value": 0.5541496675777352,
+    "r_squared": 0.03928078955172465,
+    "adjusted_r_squared": 0.016025861613491066,
+    "extension_iqr_ft": 0.5550000000000006,
+    "predicted_q3_minus_q1_mph": -0.08857716930692845,
+    "height_groups": 16,
+    "height_groups_with_two_or_more_pitchers": 12
+  },
+  "sensitivity_model": {
+    "model": "linear_height_adjustment",
+    "term": "extension_ft",
+    "n": 678,
+    "coefficient_mph": -0.17734110488828048,
+    "ci95_low_mph": -0.6882744639383028,
+    "ci95_high_mph": 0.3335922541617419,
+    "p_value": 0.49632169304370133,
+    "r_squared": 0.01480830487254392,
+    "adjusted_r_squared": 0.011889218368462462
+  },
+  "savant_url": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfSea=2025%7C&hfGT=R%7C&hfPT=FF%7C&game_date_gt=2025-03-01&game_date_lt=2025-11-01&player_type=pitcher&group_by=name&min_pitches=100&min_results=0&sort_col=release_extension&sort_order=desc",
+  "mlb_statsapi_url": "https://statsapi.mlb.com/api/v1/sports/1/players?season=2025",
+  "figure": "baseball_pitching\\imgs\\mlb_2025_extension_height_adjusted_velocity.png"
+}
