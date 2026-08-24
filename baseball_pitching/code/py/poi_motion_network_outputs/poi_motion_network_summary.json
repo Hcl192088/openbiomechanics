@@ -2,13 +2,40 @@
   "source": "D:\\baseball\\pitching\\obp\\baseball_pitching\\data\\poi\\poi_metrics.csv",
   "rows": 411,
   "sessions": 100,
-  "nodes": 31,
-  "tested_time_ordered_pairs": 377,
-  "selected_edges": 60,
+  "poi_columns_total": 86,
+  "excluded_non_node_columns": [
+    "fp_poi_n",
+    "fp_poi_range_ms",
+    "fp_poi_time",
+    "p_throws",
+    "pitch_type",
+    "session",
+    "session_pitch"
+  ],
+  "nodes": 79,
+  "tested_time_ordered_pairs": 2366,
+  "selected_edges": 285,
+  "stage_counts": {
+    "PKH": 3,
+    "PKH-FP": 11,
+    "FP": 23,
+    "FP-MER": 5,
+    "MER / FP-BR aggregate": 28,
+    "MER-BR": 2,
+    "BR": 6,
+    "Outcome": 1
+  },
+  "timing_confidence_counts": {
+    "explicit_definition": 52,
+    "validated_mapping": 22,
+    "definition_linked": 2,
+    "proxy_unverified_poi_algorithm": 2,
+    "derived_mapping": 1
+  },
   "selection": {
     "minimum_n": 250,
     "minimum_absolute_within_session_r": 0.15,
     "bh_fdr_q": 0.05
   },
-  "direction_warning": "Arrows encode predefined phase order and are not estimated causal direction."
+  "direction_warning": "Arrows encode explicit/reconstructed timing order and are not estimated causal direction."
 }

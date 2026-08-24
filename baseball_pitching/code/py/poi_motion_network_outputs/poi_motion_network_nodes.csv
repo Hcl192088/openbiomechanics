@@ -1,32 +1,80 @@
-column,label,stage,stage_index,stage_order,non_missing_n
-rear_grf_mag_max,Rear GRF magnitude,Drive / stride,0,0,403
-rear_grf_z_max,Rear vertical GRF,Drive / stride,0,1,403
-max_rear_hip_internal_rotation_velo,Rear hip IR velocity,Drive / stride,0,2,411
-max_rear_hip_flexion,Rear hip flexion,Drive / stride,0,3,411
-cog_velo_pkh,COG velocity at PKH,Drive / stride,0,4,411
-stride_length,Stride length,Drive / stride,0,5,411
-stride_angle,Stride angle,Drive / stride,0,6,411
-pelvis_anterior_tilt_fp,Pelvis anterior tilt (+),Foot plant,1,0,411
-pelvis_rotation_fp,Pelvis rotation,Foot plant,1,1,411
-torso_anterior_tilt_fp,Torso flexion (+) at FP,Foot plant,1,2,411
-torso_rotation_fp,Torso rotation,Foot plant,1,3,411
-rotation_hip_shoulder_separation_fp,Hip-shoulder separation,Foot plant,1,4,411
-shoulder_horizontal_abduction_fp,Shoulder horizontal abduction (+),Foot plant,1,5,411
-shoulder_external_rotation_fp,Shoulder external rotation,Foot plant,1,6,411
-lead_knee_extension_angular_velo_fp,Lead-knee extension velocity,Foot plant,1,7,411
-max_pelvis_rotational_velo,Peak pelvis rotation velocity,Rotation / MER,2,0,411
-max_torso_rotational_velo,Peak torso rotation velocity,Rotation / MER,2,1,411
-timing_peak_torso_to_peak_pelvis_rot_velo,Pelvis-to-torso peak timing,Rotation / MER,2,2,411
-max_rotation_hip_shoulder_separation,Peak hip-shoulder separation,Rotation / MER,2,3,411
-max_shoulder_external_rotation,Maximum shoulder ER,Rotation / MER,2,4,411
-torso_anterior_tilt_mer,Torso flexion (+) at MER,Rotation / MER,2,5,411
-torso_rotation_mer,Torso rotation at MER,Rotation / MER,2,6,411
-lead_knee_extension_from_fp_to_br,Lead-knee extension FP-BR,Acceleration / release,3,0,411
-max_shoulder_internal_rotational_velo,Shoulder IR velocity,Acceleration / release,3,1,411
-max_elbow_extension_velo,Elbow extension velocity,Acceleration / release,3,2,411
-torso_anterior_tilt_br,Torso flexion (+) at BR,Acceleration / release,3,3,411
-torso_rotation_br,Torso rotation at BR,Acceleration / release,3,4,411
-arm_slot,Arm slot,Acceleration / release,3,5,411
-pitch_speed_mph,Pitch velocity,Outcomes,4,0,411
-elbow_varus_moment,Elbow varus moment,Outcomes,4,1,411
-shoulder_internal_rotation_moment,Shoulder IR moment,Outcomes,4,2,411
+column,label,stage_index,stage,non_missing_n,timing_method,timing_confidence,timing_n,median_phase_coordinate,value_match_r,median_abs_value_error,stage_order
+pitch_speed_mph,Pitch velocity,9,Outcome,411,outcome,explicit_definition,411,9.0,,,0
+max_shoulder_internal_rotational_velo,Peak shoulder IR velocity,6,BR,411,full_signal:joint_velos.csv:shoulder_velo_z:max:window=all,validated_mapping,411,6.0,1.0,0.0,0
+max_elbow_extension_velo,Peak elbow extension velocity,5,MER-BR,411,full_signal:joint_velos.csv:elbow_velo_x:max:window=all,validated_mapping,411,4.66467065868263,1.0,0.0,0
+max_torso_rotational_velo,Peak torso rotation velocity,3,FP-MER,411,full_signal:joint_velos.csv:torso_velo_z:max:window=all,validated_mapping,411,3.029443838604143,1.0,0.0,0
+max_rotation_hip_shoulder_separation,Peak hip-shoulder separation (+),2,FP,411,full_signal:joint_angles.csv:torso_pelvis_angle_z:max:window=all,validated_mapping,411,1.9472687085569935,1.0,0.0,0
+max_elbow_flexion,Peak elbow flexion (+),3,FP-MER,411,full_signal:joint_angles.csv:elbow_angle_x:max:window=fp_br,validated_mapping,411,3.429305912596406,0.9843039613158749,0.0,1
+max_shoulder_external_rotation,Maximum shoulder ER (+),4,MER / FP-BR aggregate,411,full_signal:joint_angles.csv:shoulder_angle_z:max:window=all,validated_mapping,411,4.0,1.0,0.0,0
+elbow_flexion_fp,Elbow Flexion At Fp (flexion +),2,FP,411,explicit_fp,explicit_definition,411,2.0,,,1
+elbow_pronation_fp,Elbow Pronation At Fp (pronation +),2,FP,411,explicit_fp,explicit_definition,411,2.0,,,2
+rotation_hip_shoulder_separation_fp,Rotation Hip Shoulder Separation At Fp (separation +),2,FP,411,explicit_fp,explicit_definition,411,2.0,,,3
+shoulder_horizontal_abduction_fp,Shoulder Horizontal Abduction At Fp (horizontal abduction +),2,FP,411,explicit_fp,explicit_definition,411,2.0,,,4
+shoulder_abduction_fp,Shoulder Abduction At Fp (adduction + / abduction -),2,FP,411,explicit_fp,explicit_definition,411,2.0,,,5
+shoulder_external_rotation_fp,Shoulder External Rotation At Fp (external rotation +),2,FP,411,explicit_fp,explicit_definition,411,2.0,,,6
+lead_knee_extension_angular_velo_fp,Lead Knee Extension Angular Velocity At Fp,2,FP,411,explicit_fp,explicit_definition,411,2.0,,,7
+lead_knee_extension_angular_velo_br,Lead Knee Extension Angular Velocity At Br,6,BR,411,explicit_br_or_release_definition,explicit_definition,411,6.0,,,1
+lead_knee_extension_angular_velo_max,Lead Knee Extension Angular Velocity Max,5,MER-BR,411,full_signal:joint_velos.csv:lead_knee_velo_x:max:window=fp_br,validated_mapping,411,5.457516339869282,0.9453425256663762,0.0,1
+torso_anterior_tilt_fp,Torso Anterior Tilt At Fp (flexion +),2,FP,411,explicit_fp,explicit_definition,411,2.0,,,8
+torso_lateral_tilt_fp,Torso Lateral Tilt At Fp,2,FP,411,explicit_fp,explicit_definition,411,2.0,,,9
+torso_rotation_fp,Torso Rotation At Fp,2,FP,411,explicit_fp,explicit_definition,411,2.0,,,10
+pelvis_anterior_tilt_fp,Pelvis Anterior Tilt At Fp (anterior tilt +),2,FP,411,explicit_fp,explicit_definition,411,2.0,,,11
+pelvis_lateral_tilt_fp,Pelvis Lateral Tilt At Fp,2,FP,411,explicit_fp,explicit_definition,411,2.0,,,12
+pelvis_rotation_fp,Pelvis Rotation At Fp,2,FP,411,explicit_fp,explicit_definition,411,2.0,,,13
+max_cog_velo_x,Peak COG forward velocity,2,FP,411,derived:landmarks:centerofmass_x:d/dt:max,derived_mapping,411,1.9720000000000002,0.998691183985107,0.0538740740742325,14
+torso_rotation_min,Peak torso counterrotation,1,PKH-FP,411,full_signal:joint_angles.csv:torso_angle_z:min:window=all,validated_mapping,411,0.8038796646391585,0.9999999999999998,0.0,0
+max_pelvis_rotational_velo,Peak pelvis rotation velocity,3,FP-MER,411,full_signal:joint_velos.csv:pelvis_velo_z:max:window=all,validated_mapping,411,2.848418756815701,1.0,0.0,2
+glove_shoulder_horizontal_abduction_fp,Glove Shoulder Horizontal Abduction At Fp,2,FP,411,explicit_fp,explicit_definition,411,2.0,,,15
+glove_shoulder_abduction_fp,Glove Shoulder Abduction At Fp,2,FP,411,explicit_fp,explicit_definition,411,2.0,,,16
+glove_shoulder_external_rotation_fp,Glove Shoulder External Rotation At Fp,2,FP,411,explicit_fp,explicit_definition,411,2.0,,,17
+glove_shoulder_abduction_mer,Glove Shoulder Abduction At Mer,4,MER / FP-BR aggregate,411,explicit_mer,explicit_definition,411,4.0,,,1
+elbow_flexion_mer,Elbow Flexion At Mer,4,MER / FP-BR aggregate,411,explicit_mer,explicit_definition,411,4.0,,,2
+torso_anterior_tilt_mer,Torso Anterior Tilt At Mer (flexion +),4,MER / FP-BR aggregate,411,explicit_mer,explicit_definition,411,4.0,,,3
+torso_lateral_tilt_mer,Torso Lateral Tilt At Mer,4,MER / FP-BR aggregate,411,explicit_mer,explicit_definition,411,4.0,,,4
+torso_rotation_mer,Torso Rotation At Mer,4,MER / FP-BR aggregate,411,explicit_mer,explicit_definition,411,4.0,,,5
+elbow_varus_moment,Peak elbow varus moment,4,MER / FP-BR aggregate,411,full_signal:forces_moments.csv:elbow_moment_y:max:window=all,validated_mapping,411,3.7823022709475334,0.9970940215460082,0.0,6
+shoulder_internal_rotation_moment,Peak shoulder IR moment,4,MER / FP-BR aggregate,411,full_signal:forces_moments.csv:shoulder_upper_arm_moment_z:max:window=all,validated_mapping,411,3.829218106995885,0.9953115240148164,0.0,7
+torso_anterior_tilt_br,Torso Anterior Tilt At Br (flexion +),6,BR,411,explicit_br_or_release_definition,explicit_definition,411,6.0,,,2
+torso_lateral_tilt_br,Torso Lateral Tilt At Br,6,BR,411,explicit_br_or_release_definition,explicit_definition,411,6.0,,,3
+torso_rotation_br,Torso Rotation At Br,6,BR,411,explicit_br_or_release_definition,explicit_definition,411,6.0,,,4
+lead_knee_extension_from_fp_to_br,Lead Knee Extension From At Fp To At Br,4,MER / FP-BR aggregate,411,explicit_fp_br_window_midpoint,explicit_definition,411,4.0,,,8
+cog_velo_pkh,COG velocity at PKH,0,PKH,411,explicit_pkh,explicit_definition,411,0.0,,,0
+stride_length,Stride length,2,FP,411,definition_at_foot_plant,explicit_definition,411,2.0,,,18
+stride_angle,Stride angle (cross-body +),2,FP,411,definition_at_foot_plant,explicit_definition,411,2.0,,,19
+arm_slot,Arm slot,6,BR,411,explicit_br_or_release_definition,explicit_definition,411,6.0,,,5
+timing_peak_torso_to_peak_pelvis_rot_velo,Pelvis-to-torso peak timing,3,FP-MER,411,pelvis_to_torso_peak_interval,explicit_definition,411,3.0,,,3
+max_shoulder_horizontal_abduction,Peak shoulder horizontal abduction (+),2,FP,411,full_signal:joint_angles.csv:shoulder_angle_x:max:window=all,validated_mapping,411,1.9495710943592408,1.0,0.0,20
+shoulder_transfer_fp_br,Shoulder Transfer Fp-Br,4,MER / FP-BR aggregate,411,explicit_fp_br_window_midpoint,explicit_definition,411,4.0,,,9
+shoulder_generation_fp_br,Shoulder Generation Fp-Br,4,MER / FP-BR aggregate,411,explicit_fp_br_window_midpoint,explicit_definition,411,4.0,,,10
+shoulder_absorption_fp_br,Shoulder Absorption Fp-Br,4,MER / FP-BR aggregate,411,explicit_fp_br_window_midpoint,explicit_definition,411,4.0,,,11
+elbow_transfer_fp_br,Elbow Transfer Fp-Br,4,MER / FP-BR aggregate,411,explicit_fp_br_window_midpoint,explicit_definition,411,4.0,,,12
+elbow_generation_fp_br,Elbow Generation Fp-Br,4,MER / FP-BR aggregate,411,explicit_fp_br_window_midpoint,explicit_definition,411,4.0,,,13
+elbow_absorption_fp_br,Elbow Absorption Fp-Br,4,MER / FP-BR aggregate,411,explicit_fp_br_window_midpoint,explicit_definition,411,4.0,,,14
+lead_hip_transfer_fp_br,Lead Hip Transfer Fp-Br,4,MER / FP-BR aggregate,403,explicit_fp_br_window_midpoint,explicit_definition,403,4.0,,,15
+lead_hip_generation_fp_br,Lead Hip Generation Fp-Br,4,MER / FP-BR aggregate,403,explicit_fp_br_window_midpoint,explicit_definition,403,4.0,,,16
+lead_hip_absorption_fp_br,Lead Hip Absorption Fp-Br,4,MER / FP-BR aggregate,403,explicit_fp_br_window_midpoint,explicit_definition,403,4.0,,,17
+lead_knee_transfer_fp_br,Lead Knee Transfer Fp-Br,4,MER / FP-BR aggregate,403,explicit_fp_br_window_midpoint,explicit_definition,403,4.0,,,18
+lead_knee_generation_fp_br,Lead Knee Generation Fp-Br,4,MER / FP-BR aggregate,403,explicit_fp_br_window_midpoint,explicit_definition,403,4.0,,,19
+lead_knee_absorption_fp_br,Lead Knee Absorption Fp-Br,4,MER / FP-BR aggregate,403,explicit_fp_br_window_midpoint,explicit_definition,403,4.0,,,20
+rear_hip_transfer_pkh_fp,Rear Hip Transfer Pkh-Fp,1,PKH-FP,403,explicit_pkh_fp_window,explicit_definition,403,1.0,,,1
+rear_hip_generation_pkh_fp,Rear Hip Generation Pkh-Fp,1,PKH-FP,403,explicit_pkh_fp_window,explicit_definition,403,1.0,,,2
+rear_hip_absorption_pkh_fp,Rear Hip Absorption Pkh-Fp,1,PKH-FP,403,explicit_pkh_fp_window,explicit_definition,403,1.0,,,3
+rear_knee_transfer_pkh_fp,Rear Knee Transfer Pkh-Fp,1,PKH-FP,403,explicit_pkh_fp_window,explicit_definition,403,1.0,,,4
+rear_knee_generation_pkh_fp,Rear Knee Generation Pkh-Fp,1,PKH-FP,403,explicit_pkh_fp_window,explicit_definition,403,1.0,,,5
+rear_knee_absorption_pkh_fp,Rear Knee Absorption Pkh-Fp,1,PKH-FP,403,explicit_pkh_fp_window,explicit_definition,403,1.0,,,6
+pelvis_lumbar_transfer_fp_br,Pelvis Lumbar Transfer Fp-Br,4,MER / FP-BR aggregate,403,explicit_fp_br_window_midpoint,explicit_definition,403,4.0,,,21
+thorax_distal_transfer_fp_br,Thorax Distal Transfer Fp-Br,4,MER / FP-BR aggregate,411,explicit_fp_br_window_midpoint,explicit_definition,411,4.0,,,22
+rear_grf_x_max,Rear Grf X Max,2,FP,403,full_signal:force_plate.csv:rear_force_x:max,validated_mapping,403,1.5192736540299459,1.0,0.0,21
+rear_grf_y_max,Rear Grf Y Max,0,PKH,403,full_signal:force_plate.csv:rear_force_y:max,validated_mapping,403,0.10516880788766061,1.0,0.0,1
+rear_grf_z_max,Rear Grf Z Max,1,PKH-FP,403,full_signal:force_plate.csv:rear_force_z:max,validated_mapping,403,1.2304990487340848,1.0,0.0,7
+rear_grf_mag_max,Rear Grf Mag Max,1,PKH-FP,403,full_signal:force_plate.csv:rear_force_mag:max,validated_mapping,403,1.3404296497000194,0.999999999999993,2.418442682028399e-05,8
+rear_grf_angle_at_max,Rear Grf Angle At Max,1,PKH-FP,403,same_time_as:rear_grf_mag_max,definition_linked,403,1.3404296497000194,,,9
+lead_grf_x_max,Lead Grf X Max,4,MER / FP-BR aggregate,403,full_signal:force_plate.csv:lead_force_x:max,validated_mapping,403,3.8088386433710157,1.0,0.0,23
+lead_grf_y_max,Lead Grf Y Max,3,FP-MER,403,full_signal:force_plate.csv:lead_force_y:max,validated_mapping,403,2.5905349794238677,0.9999999999999999,0.0,4
+lead_grf_z_max,Lead Grf Z Max,4,MER / FP-BR aggregate,403,full_signal:force_plate.csv:lead_force_z:max,validated_mapping,403,3.903424056189639,0.9999999999999998,0.0,24
+lead_grf_mag_max,Lead Grf Mag Max,4,MER / FP-BR aggregate,403,full_signal:force_plate.csv:lead_force_mag:max,validated_mapping,403,3.866090712742979,0.9999999999999966,2.5014809352796874e-05,25
+lead_grf_angle_at_max,Lead Grf Angle At Max,4,MER / FP-BR aggregate,403,same_time_as:lead_grf_mag_max,definition_linked,403,3.866090712742979,,,26
+peak_rfd_rear,Peak rear RFD,0,PKH,403,proxy:max_d(rear_grf_magnitude)/dt,proxy_unverified_poi_algorithm,403,0.4726407613005552,,,2
+peak_rfd_lead,Peak lead RFD,2,FP,403,proxy:max_d(lead_grf_magnitude)/dt,proxy_unverified_poi_algorithm,403,2.113168724279832,,,22
+max_rear_hip_internal_rotation_velo,Peak rear-hip IR velocity,4,MER / FP-BR aggregate,411,full_signal:joint_velos.csv:rear_hip_velo_z:negative_min:window=all,validated_mapping,411,3.9252717391304355,0.9999999999999998,0.0,27
+max_rear_hip_flexion,Peak rear-hip flexion (-),1,PKH-FP,411,full_signal:joint_angles.csv:rear_hip_angle_x:negative_min:window=all,validated_mapping,411,1.3170237038914945,1.0,0.0,10
