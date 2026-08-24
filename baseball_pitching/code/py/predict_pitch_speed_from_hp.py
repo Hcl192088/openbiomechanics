@@ -159,6 +159,13 @@ def feature_panels(all_numeric_columns: list[str]) -> dict[str, list[str]]:
             "peak_eccentric_force_[n]_mean_pp",
             "body_weight_[lbs]",
         ],
+        "five_selected_metrics_without_imtp": [
+            "peak_power_[w]_mean_cmj",
+            "peak_power_[w]_mean_sj",
+            "best_rsi_(flight/contact_time)_mean_ht",
+            "peak_eccentric_force_[n]_mean_pp",
+            "body_weight_[lbs]",
+        ],
         "vald_pdf_report_compatible": [
             "jump_height_(imp-mom)_[cm]_mean_cmj",
             "peak_power_[w]_mean_cmj",
