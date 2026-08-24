@@ -1,0 +1,229 @@
+{
+  "poi_path": "D:\\baseball\\pitching\\obp\\baseball_pitching\\data\\poi\\poi_metrics.csv",
+  "metadata_path": "D:\\baseball\\pitching\\obp\\baseball_pitching\\data\\metadata.csv",
+  "validation": "5-fold GroupKFold by metadata.user",
+  "rows": 411,
+  "athletes": 100,
+  "pitch_speed_summary_mph": {
+    "count": 411.0,
+    "mean": 84.70364963503648,
+    "std": 4.717684561655903,
+    "min": 69.5,
+    "25%": 81.4,
+    "50%": 85.3,
+    "75%": 87.9,
+    "max": 94.4
+  },
+  "feature_summary": {
+    "max_rotation_hip_shoulder_separation": {
+      "count": 411.0,
+      "mean": 32.25119416058394,
+      "std": 6.615444994354625,
+      "min": 13.1602,
+      "25%": 27.57475,
+      "50%": 32.3166,
+      "75%": 36.73725,
+      "max": 50.5117
+    },
+    "max_shoulder_horizontal_abduction": {
+      "count": 411.0,
+      "mean": 48.2411600973236,
+      "std": 12.405893975800137,
+      "min": 15.7509,
+      "25%": 40.00985,
+      "50%": 50.6812,
+      "75%": 56.05085,
+      "max": 77.3035
+    },
+    "max_shoulder_external_rotation": {
+      "count": 411.0,
+      "mean": 169.14998929440387,
+      "std": 9.882078971391191,
+      "min": 143.309,
+      "25%": 163.546,
+      "50%": 169.3067,
+      "75%": 176.3846,
+      "max": 191.5387
+    },
+    "stride_length": {
+      "count": 411.0,
+      "mean": 0.8354043795620439,
+      "std": 0.05893275854355659,
+      "min": 0.698,
+      "25%": 0.7986,
+      "50%": 0.8374,
+      "75%": 0.8765499999999999,
+      "max": 0.9956
+    },
+    "elbow_varus_moment": {
+      "count": 411.0,
+      "mean": 111.27347274939171,
+      "std": 19.649116450662472,
+      "min": 67.8506,
+      "25%": 96.90495,
+      "50%": 110.9466,
+      "75%": 123.16624999999999,
+      "max": 199.9297
+    },
+    "lead_knee_extension_angular_velo_max": {
+      "count": 411.0,
+      "mean": 373.0672163017032,
+      "std": 148.6662291841063,
+      "min": 77.9749,
+      "25%": 261.03615,
+      "50%": 347.844,
+      "75%": 471.8666,
+      "max": 955.1486
+    }
+  },
+  "strict_mapping": [
+    "max_shoulder_external_rotation",
+    "stride_length",
+    "elbow_varus_moment",
+    "lead_knee_extension_angular_velo_max"
+  ],
+  "approximate_mapping_sensitivity": [
+    "max_rotation_hip_shoulder_separation",
+    "max_shoulder_horizontal_abduction"
+  ],
+  "not_mapped": [
+    "peak_arm_speed",
+    "ball_path_length",
+    "pk_to_br_time"
+  ],
+  "models": {
+    "median_baseline": {
+      "features": [],
+      "mae_mph": 3.853284671532846,
+      "rmse_mph": 4.825759650498515,
+      "median_ae_mph": 3.200000000000003,
+      "p90_ae_mph": 7.300000000000011,
+      "r2": -0.04889385778484123,
+      "bias_mph": 0.5360097323600953
+    },
+    "strict_four": {
+      "features": [
+        "max_shoulder_external_rotation",
+        "stride_length",
+        "elbow_varus_moment",
+        "lead_knee_extension_angular_velo_max"
+      ],
+      "mae_mph": 3.049152796053521,
+      "rmse_mph": 3.953466203265794,
+      "median_ae_mph": 2.2969151052122214,
+      "p90_ae_mph": 6.8466970864546255,
+      "r2": 0.29602663536444285,
+      "bias_mph": 0.0672279689205862
+    },
+    "strict_without_elbow_moment": {
+      "features": [
+        "max_shoulder_external_rotation",
+        "stride_length",
+        "lead_knee_extension_angular_velo_max"
+      ],
+      "mae_mph": 3.7411681986755188,
+      "rmse_mph": 4.67201816295386,
+      "median_ae_mph": 3.1059711670207832,
+      "p90_ae_mph": 7.316541579754272,
+      "r2": 0.016873932605239506,
+      "bias_mph": -0.010676193778466061
+    },
+    "expanded_six": {
+      "features": [
+        "max_rotation_hip_shoulder_separation",
+        "max_shoulder_horizontal_abduction",
+        "max_shoulder_external_rotation",
+        "stride_length",
+        "elbow_varus_moment",
+        "lead_knee_extension_angular_velo_max"
+      ],
+      "mae_mph": 2.8320364241255738,
+      "rmse_mph": 3.693350736654513,
+      "median_ae_mph": 2.038560123008878,
+      "p90_ae_mph": 6.655845458573012,
+      "r2": 0.38561405676937355,
+      "bias_mph": 0.1934945461783447
+    },
+    "expanded_without_elbow_moment": {
+      "features": [
+        "max_rotation_hip_shoulder_separation",
+        "max_shoulder_horizontal_abduction",
+        "max_shoulder_external_rotation",
+        "stride_length",
+        "lead_knee_extension_angular_velo_max"
+      ],
+      "mae_mph": 3.4394365711630925,
+      "rmse_mph": 4.198317314783193,
+      "median_ae_mph": 2.9807442972103075,
+      "p90_ae_mph": 6.939956365754213,
+      "r2": 0.20612763051600524,
+      "bias_mph": 0.1278849483316193
+    },
+    "single__max_rotation_hip_shoulder_separation": {
+      "features": [
+        "max_rotation_hip_shoulder_separation"
+      ],
+      "mae_mph": 3.601190680916427,
+      "rmse_mph": 4.516841530738467,
+      "median_ae_mph": 3.1395529221708784,
+      "p90_ae_mph": 7.1934027241929925,
+      "r2": 0.0810965659272167,
+      "bias_mph": -0.04191609181149965
+    },
+    "single__max_shoulder_horizontal_abduction": {
+      "features": [
+        "max_shoulder_horizontal_abduction"
+      ],
+      "mae_mph": 3.5260388213653697,
+      "rmse_mph": 4.26616707467965,
+      "median_ae_mph": 3.044383169338147,
+      "p90_ae_mph": 6.610926736076436,
+      "r2": 0.18026045618146946,
+      "bias_mph": 0.016328685818895038
+    },
+    "single__max_shoulder_external_rotation": {
+      "features": [
+        "max_shoulder_external_rotation"
+      ],
+      "mae_mph": 3.678830447630538,
+      "rmse_mph": 4.574020231941105,
+      "median_ae_mph": 3.122591727833907,
+      "p90_ae_mph": 7.199652422471502,
+      "r2": 0.05768451249252604,
+      "bias_mph": 0.01704748453540961
+    },
+    "single__stride_length": {
+      "features": [
+        "stride_length"
+      ],
+      "mae_mph": 4.005134461716981,
+      "rmse_mph": 4.956733063663463,
+      "median_ae_mph": 3.462683761689533,
+      "p90_ae_mph": 7.450976218699367,
+      "r2": -0.10660143548917289,
+      "bias_mph": -0.08656741268709779
+    },
+    "single__elbow_varus_moment": {
+      "features": [
+        "elbow_varus_moment"
+      ],
+      "mae_mph": 3.4052343550257262,
+      "rmse_mph": 4.390902171072282,
+      "median_ae_mph": 2.841085122896274,
+      "p90_ae_mph": 7.1864368769148825,
+      "r2": 0.1316242461923558,
+      "bias_mph": 0.14463257419214606
+    },
+    "single__lead_knee_extension_angular_velo_max": {
+      "features": [
+        "lead_knee_extension_angular_velo_max"
+      ],
+      "mae_mph": 3.9486786217891403,
+      "rmse_mph": 4.94558732537551,
+      "median_ae_mph": 3.4330850212947155,
+      "p90_ae_mph": 7.8980181744366575,
+      "r2": -0.10163041009682372,
+      "bias_mph": 0.017641981899934017
+    }
+  }
+}
