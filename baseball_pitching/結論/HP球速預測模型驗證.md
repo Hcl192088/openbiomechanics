@@ -20,6 +20,10 @@ up: "[[高體能測試與球速分析]]"
 
 將兩項 Peak Power 完全分開做單變量模型時，CMJ Peak Power-only 的 MAE 為 4.83 mph、R² 為 0.67；SJ Peak Power-only 的 MAE 為 5.05 mph、R² 為 0.62。以未見選手的整體誤差判斷，CMJ absolute Peak Power 的單變量預測力略優於 SJ absolute Peak Power，但兩者都不如合併使用。
 
+個案的 VALD CMJ Peak Power 平均為 4312 W（4 次範圍 4162–4396 W），實際最快球速為 114 km/h。排除 `pitch_speed_mph <= 40` 的無效／非代表性球速後，4312 W 在線性分層散布圖上的預測為：綜合 124.3、高中 124.3、大學 129.0、職業 132.6 km/h。綜合／高中線確實比 CMJ-only Extra Trees 的 129.2 km/h 低，但四條線仍全數高估實際球速；此個案支持「CMJ 絕對功率充足，但體能至球速轉換低於資料集平均」的描述，不能單靠競技層級校正解決。職業組內線的樣本僅 86 列、57 位選手，且圖上 `R² = 0.129`，不應把 132.6 km/h 當成精準個人潛力。
+
+![CMJ 分層級個案預測](../imgs/cmj_power_level_user_prediction.png)
+
 ## 驗證設計
 
 - 資料：`high_performance/data/hp_obp.csv`
@@ -58,4 +62,6 @@ up: "[[高體能測試與球速分析]]"
 - 腳本：`baseball_pitching/code/py/predict_pitch_speed_from_hp.py`
 - 完整指標：`baseball_pitching/data/hp_pitch_speed_prediction/report.json`
 - 每筆 out-of-fold 預測：`baseball_pitching/data/hp_pitch_speed_prediction/oof_predictions_speed_over_40_sensitivity.csv`
+- CMJ 分層個案圖：`baseball_pitching/code/py/plot_cmj_level_user_prediction.py`
+- CMJ 分層個案數值：`baseball_pitching/data/hp_pitch_speed_prediction/cmj_level_user_prediction.csv`
 - 分析日期：2026-08-24
