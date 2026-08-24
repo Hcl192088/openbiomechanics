@@ -148,6 +148,23 @@ def feature_panels(all_numeric_columns: list[str]) -> dict[str, list[str]]:
     cmj = [column for column in all_numeric_columns if column.endswith("_cmj")]
     imtp = [column for column in all_numeric_columns if column.endswith("_imtp")]
     return {
+        "vald_pdf_report_compatible": [
+            "jump_height_(imp-mom)_[cm]_mean_cmj",
+            "peak_power_[w]_mean_cmj",
+            "peak_power_/_bm_[w/kg]_mean_cmj",
+            "rsi-modified_[m/s]_mean_cmj",
+            "concentric_peak_force_[n]_mean_cmj",
+            "jump_height_(imp-mom)_[cm]_mean_sj",
+            "peak_power_[w]_mean_sj",
+            "peak_power_/_bm_[w/kg]_mean_sj",
+            "peak_vertical_force_[n]_max_imtp",
+            "net_peak_vertical_force_[n]_max_imtp",
+            "best_rsi_(flight/contact_time)_mean_ht",
+            "peak_takeoff_force_[n]_mean_pp",
+            "peak_eccentric_force_[n]_mean_pp",
+            "relative_strength",
+            "body_weight_[lbs]",
+        ],
         "cmj_plus_body_weight": cmj + ["body_weight_[lbs]"],
         "cmj_imtp_plus_body_weight": cmj
         + imtp
@@ -197,6 +214,11 @@ def evaluate(data: pd.DataFrame, minimum_speed: float, label: str) -> dict:
             )
             key = f"{feature_set}__{model_name}"
             metrics = metric_summary(y, predictions)
+            complete = x.notna().all(axis=1).to_numpy()
+            complete_profile = {
+                "n": int(complete.sum()),
+                **metric_summary(y[complete], predictions[complete]),
+            }
             by_level = {}
             for level, index in analysis.groupby(LEVEL, dropna=False).groups.items():
                 positions = analysis.index.get_indexer(index)
@@ -204,7 +226,11 @@ def evaluate(data: pd.DataFrame, minimum_speed: float, label: str) -> dict:
                     "n": int(len(positions)),
                     **metric_summary(y[positions], predictions[positions]),
                 }
-            result["models"][key] = {**metrics, "by_playing_level": by_level}
+            result["models"][key] = {
+                **metrics,
+                "complete_profile": complete_profile,
+                "by_playing_level": by_level,
+            }
             prediction_frames.append(
                 pd.DataFrame(
                     {
