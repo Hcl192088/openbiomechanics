@@ -1,0 +1,32 @@
+column,label,stage,stage_index,stage_order,non_missing_n
+rear_grf_mag_max,Rear GRF magnitude,Drive / stride,0,0,403
+rear_grf_z_max,Rear vertical GRF,Drive / stride,0,1,403
+max_rear_hip_internal_rotation_velo,Rear hip IR velocity,Drive / stride,0,2,411
+max_rear_hip_flexion,Rear hip flexion,Drive / stride,0,3,411
+cog_velo_pkh,COG velocity at PKH,Drive / stride,0,4,411
+stride_length,Stride length,Drive / stride,0,5,411
+stride_angle,Stride angle,Drive / stride,0,6,411
+pelvis_anterior_tilt_fp,Pelvis anterior tilt (+),Foot plant,1,0,411
+pelvis_rotation_fp,Pelvis rotation,Foot plant,1,1,411
+torso_anterior_tilt_fp,Torso flexion (+) at FP,Foot plant,1,2,411
+torso_rotation_fp,Torso rotation,Foot plant,1,3,411
+rotation_hip_shoulder_separation_fp,Hip-shoulder separation,Foot plant,1,4,411
+shoulder_horizontal_abduction_fp,Shoulder horizontal abduction (+),Foot plant,1,5,411
+shoulder_external_rotation_fp,Shoulder external rotation,Foot plant,1,6,411
+lead_knee_extension_angular_velo_fp,Lead-knee extension velocity,Foot plant,1,7,411
+max_pelvis_rotational_velo,Peak pelvis rotation velocity,Rotation / MER,2,0,411
+max_torso_rotational_velo,Peak torso rotation velocity,Rotation / MER,2,1,411
+timing_peak_torso_to_peak_pelvis_rot_velo,Pelvis-to-torso peak timing,Rotation / MER,2,2,411
+max_rotation_hip_shoulder_separation,Peak hip-shoulder separation,Rotation / MER,2,3,411
+max_shoulder_external_rotation,Maximum shoulder ER,Rotation / MER,2,4,411
+torso_anterior_tilt_mer,Torso flexion (+) at MER,Rotation / MER,2,5,411
+torso_rotation_mer,Torso rotation at MER,Rotation / MER,2,6,411
+lead_knee_extension_from_fp_to_br,Lead-knee extension FP-BR,Acceleration / release,3,0,411
+max_shoulder_internal_rotational_velo,Shoulder IR velocity,Acceleration / release,3,1,411
+max_elbow_extension_velo,Elbow extension velocity,Acceleration / release,3,2,411
+torso_anterior_tilt_br,Torso flexion (+) at BR,Acceleration / release,3,3,411
+torso_rotation_br,Torso rotation at BR,Acceleration / release,3,4,411
+arm_slot,Arm slot,Acceleration / release,3,5,411
+pitch_speed_mph,Pitch velocity,Outcomes,4,0,411
+elbow_varus_moment,Elbow varus moment,Outcomes,4,1,411
+shoulder_internal_rotation_moment,Shoulder IR moment,Outcomes,4,2,411

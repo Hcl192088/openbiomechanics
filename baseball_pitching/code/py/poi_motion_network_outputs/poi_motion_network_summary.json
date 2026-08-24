@@ -1,0 +1,14 @@
+{
+  "source": "D:\\baseball\\pitching\\obp\\baseball_pitching\\data\\poi\\poi_metrics.csv",
+  "rows": 411,
+  "sessions": 100,
+  "nodes": 31,
+  "tested_time_ordered_pairs": 377,
+  "selected_edges": 60,
+  "selection": {
+    "minimum_n": 250,
+    "minimum_absolute_within_session_r": 0.15,
+    "bh_fdr_q": 0.05
+  },
+  "direction_warning": "Arrows encode predefined phase order and are not estimated causal direction."
+}
