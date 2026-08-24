@@ -154,6 +154,21 @@ delta_Kz_J = 0.5 * Izz * (omega_peak_rad_s^2 - omega_BR_rad_s^2)
 
 同窗STP平均46.75 J，高於Kz損失15.47 J，不能把STP全部解讀為z軸動能直接釋放；它仍需要完整RTA三維旋轉、平移與各邊界功率平衡才能守恆。
 
+### 肩外轉速度與肩部能量轉移
+
+肩關節z軸角速度的專案定義為內轉正、外轉負；因此最大肩外轉速度定義為FP至MER間 `-min(shoulder_velo_z)`。以100位投手為獨立分析單位，平均最大肩外轉速度為1419 deg/s（SD 188，範圍1027–1903）。
+
+| 能量結果 | 未校正r | 控制體重partial r | p | 四個主要終點Bonferroni p |
+|---|---:|---:|---:|---:|
+| FP–MER STP | -0.024 | 0.062 | 0.539 | 1.000 |
+| FP–MER STP+JFP | 0.041 | 0.201 | 0.045 | 0.180 |
+| FP–BR STP | -0.033 | 0.059 | 0.563 | 1.000 |
+| FP–BR官方總肩部轉移 | 0.062 | 0.219 | 0.029 | 0.115 |
+
+所以目前不支持「肩外轉越快，肩部STP越多」。總肩部轉移在控制體重後只有小正向訊號，而且多重比較校正後不成立。分解顯示訊號偏向JFP：FP–MER JFP partial r = 0.232（p = 0.020），FP–BR JFP partial r = 0.185（p = 0.066）；這些是診斷性分析，不另視為校正後成立的主要結果。
+
+411球層級、以投手為cluster的敏感度模型方向一致：每增加100 deg/s外轉速度，控制體重後FP–MER總轉移增加4.47 J（95% CI 0.51–8.44，p = 0.027），FP–BR官方總轉移增加5.35 J（95% CI 0.93–9.77，p = 0.018）；STP仍無關。由於外轉速度與能量為同一動作過程中的同期結果，且主要訊號來自JFP，不能將其解讀為外轉速度造成能量轉移。
+
 若暫以體重近似 `I_T`，使用 `mass * (omega_peak^2 - omega_BR^2)`，與重建STP的原始相關升至r = 0.376（R² = 0.142）；以 `mass * height^2`作慣量尺度時為r = 0.447（R² = 0.200）。但目標能量本身與體重高度相關，因此主要是共享體型訊號：體重基準模型已解釋STP的32.8%，加入質量加權下降代理後只額外增加3.5%（p = 0.023）；以體重與身高為基準，`mass * height^2`版本也只額外增加3.6%（p = 0.022）。對總肩部轉移，兩種代理的額外R²分別為4.0%與4.4%。所以「直接乘體重」會提高表面相關，但在體型之外仍只有小幅獨立解釋力；它仍不是個別軀幹慣量的實測值。
 
 當兩側 STP 異號時：
@@ -274,6 +289,7 @@ min(abs(thorax_dist_seg_pwr), abs(upper_arm_prox_seg_pwr))
 - 腳本：`baseball_pitching/code/py/validate_shoulder_stp_decomposition.py`
 - 慣量重建腳本：`baseball_pitching/code/py/calculate_thorax_inertia.py`
 - 軀幹限制期同窗分析：`baseball_pitching/code/py/analyze_thorax_limited_trunk_energy.py`
+- 肩外轉速度分析：`baseball_pitching/code/py/analyze_shoulder_external_rotation_velocity_transfer.py`
 - 慣量與逐人LOOCV誤差：`baseball_pitching/data/poi/thorax_inertia_estimates.csv`
 - 資料：`baseball_pitching/data/full_sig/energy_flow.csv`
 - 公式來源：官方 `baseball_pitching/code/v3d/CMO.v3s` 中，segment power 定義為 JFP 與 STP 相加。
