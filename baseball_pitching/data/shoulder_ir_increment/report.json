@@ -1,0 +1,372 @@
+{
+  "data_path": "D:\\baseball\\pitching\\obp\\high_performance\\data\\hp_obp.csv",
+  "target_filter": "pitch_speed_mph > 40",
+  "cohort_filter": "ShoulderIRL and ShoulderIRR both observed",
+  "rows": 456,
+  "athletes": 324,
+  "playing_level_counts": {
+    "College": 249,
+    "High School": 141,
+    "Pro": 66
+  },
+  "ir_summary": {
+    "ShoulderIRL": {
+      "count": 456.0,
+      "mean": 44.01425438596491,
+      "std": 11.592811086763525,
+      "min": 16.5,
+      "25%": 35.975,
+      "50%": 43.25,
+      "75%": 51.6,
+      "max": 83.5
+    },
+    "ShoulderIRR": {
+      "count": 456.0,
+      "mean": 47.04276315789474,
+      "std": 12.41470911693336,
+      "min": 16.4,
+      "25%": 38.175000000000004,
+      "50%": 46.05,
+      "75%": 54.125,
+      "max": 95.9
+    }
+  },
+  "baseline_complete_rows": 92,
+  "models": {
+    "baseline_six_hp": {
+      "features": [
+        "peak_power_[w]_mean_cmj",
+        "peak_power_[w]_mean_sj",
+        "peak_vertical_force_[n]_max_imtp",
+        "best_rsi_(flight/contact_time)_mean_ht",
+        "peak_eccentric_force_[n]_mean_pp",
+        "body_weight_[lbs]"
+      ],
+      "mae_mph": 3.890997575459248,
+      "rmse_mph": 5.056540170265413,
+      "median_ae_mph": 3.1502911877609634,
+      "p90_ae_mph": 7.410573391362469,
+      "r2": 0.4364402215634058,
+      "bias_mph": -0.06155850101444057
+    },
+    "baseline_plus_irl": {
+      "features": [
+        "peak_power_[w]_mean_cmj",
+        "peak_power_[w]_mean_sj",
+        "peak_vertical_force_[n]_max_imtp",
+        "best_rsi_(flight/contact_time)_mean_ht",
+        "peak_eccentric_force_[n]_mean_pp",
+        "body_weight_[lbs]",
+        "ShoulderIRL"
+      ],
+      "mae_mph": 3.9055705281157826,
+      "rmse_mph": 5.0608152187784485,
+      "median_ae_mph": 3.101578989458339,
+      "p90_ae_mph": 7.447850510651456,
+      "r2": 0.4354868962622681,
+      "bias_mph": -0.059094855147467824,
+      "paired_vs_baseline": {
+        "delta_mae_mph": 0.014572952656534136,
+        "ci95_low_mph": -0.02388503722167177,
+        "ci95_high_mph": 0.05233856739314778,
+        "bootstrap_probability_improvement": 0.2318,
+        "bootstrap_repetitions": 10000
+      }
+    },
+    "baseline_plus_irr": {
+      "features": [
+        "peak_power_[w]_mean_cmj",
+        "peak_power_[w]_mean_sj",
+        "peak_vertical_force_[n]_max_imtp",
+        "best_rsi_(flight/contact_time)_mean_ht",
+        "peak_eccentric_force_[n]_mean_pp",
+        "body_weight_[lbs]",
+        "ShoulderIRR"
+      ],
+      "mae_mph": 3.8715892134582894,
+      "rmse_mph": 5.065315582004506,
+      "median_ae_mph": 3.0059736372164494,
+      "p90_ae_mph": 7.682308836789957,
+      "r2": 0.43448245587580336,
+      "bias_mph": -0.05763034234726019,
+      "paired_vs_baseline": {
+        "delta_mae_mph": -0.01940836200095852,
+        "ci95_low_mph": -0.09219500452338,
+        "ci95_high_mph": 0.05137703684986606,
+        "bootstrap_probability_improvement": 0.703,
+        "bootstrap_repetitions": 10000
+      }
+    },
+    "baseline_plus_both_raw": {
+      "features": [
+        "peak_power_[w]_mean_cmj",
+        "peak_power_[w]_mean_sj",
+        "peak_vertical_force_[n]_max_imtp",
+        "best_rsi_(flight/contact_time)_mean_ht",
+        "peak_eccentric_force_[n]_mean_pp",
+        "body_weight_[lbs]",
+        "ShoulderIRL",
+        "ShoulderIRR"
+      ],
+      "mae_mph": 3.8822752895119748,
+      "rmse_mph": 5.069326605740025,
+      "median_ae_mph": 3.0748570724779896,
+      "p90_ae_mph": 7.662163592401136,
+      "r2": 0.43358647917071014,
+      "bias_mph": -0.061987532506950396,
+      "paired_vs_baseline": {
+        "delta_mae_mph": -0.008722285947272911,
+        "ci95_low_mph": -0.08548504792164593,
+        "ci95_high_mph": 0.06585923388896876,
+        "bootstrap_probability_improvement": 0.5933,
+        "bootstrap_repetitions": 10000
+      }
+    },
+    "baseline_plus_ir_mean": {
+      "features": [
+        "peak_power_[w]_mean_cmj",
+        "peak_power_[w]_mean_sj",
+        "peak_vertical_force_[n]_max_imtp",
+        "best_rsi_(flight/contact_time)_mean_ht",
+        "peak_eccentric_force_[n]_mean_pp",
+        "body_weight_[lbs]",
+        "ShoulderIR_mean"
+      ],
+      "mae_mph": 3.9047132998447607,
+      "rmse_mph": 5.079267265610993,
+      "median_ae_mph": 3.1202951052180836,
+      "p90_ae_mph": 7.419807039155664,
+      "r2": 0.43136289203051514,
+      "bias_mph": -0.05360511895598682,
+      "paired_vs_baseline": {
+        "delta_mae_mph": 0.013715724385513266,
+        "ci95_low_mph": -0.048169412534714524,
+        "ci95_high_mph": 0.07509311041498425,
+        "bootstrap_probability_improvement": 0.33,
+        "bootstrap_repetitions": 10000
+      }
+    },
+    "baseline_plus_ir_min": {
+      "features": [
+        "peak_power_[w]_mean_cmj",
+        "peak_power_[w]_mean_sj",
+        "peak_vertical_force_[n]_max_imtp",
+        "best_rsi_(flight/contact_time)_mean_ht",
+        "peak_eccentric_force_[n]_mean_pp",
+        "body_weight_[lbs]",
+        "ShoulderIR_min"
+      ],
+      "mae_mph": 3.9006937461806617,
+      "rmse_mph": 5.070541261406564,
+      "median_ae_mph": 3.2593624873258236,
+      "p90_ae_mph": 7.474421307975078,
+      "r2": 0.4333150112337091,
+      "bias_mph": -0.0641471604813269,
+      "paired_vs_baseline": {
+        "delta_mae_mph": 0.009696170721413822,
+        "ci95_low_mph": -0.03860661904719681,
+        "ci95_high_mph": 0.055566124667247106,
+        "bootstrap_probability_improvement": 0.3372,
+        "bootstrap_repetitions": 10000
+      }
+    },
+    "baseline_plus_ir_max": {
+      "features": [
+        "peak_power_[w]_mean_cmj",
+        "peak_power_[w]_mean_sj",
+        "peak_vertical_force_[n]_max_imtp",
+        "best_rsi_(flight/contact_time)_mean_ht",
+        "peak_eccentric_force_[n]_mean_pp",
+        "body_weight_[lbs]",
+        "ShoulderIR_max"
+      ],
+      "mae_mph": 3.873054338218788,
+      "rmse_mph": 5.041352111590178,
+      "median_ae_mph": 3.082745249227969,
+      "p90_ae_mph": 7.395479489299696,
+      "r2": 0.4398206057866838,
+      "bias_mph": -0.05645785965649031,
+      "paired_vs_baseline": {
+        "delta_mae_mph": -0.01794323724046047,
+        "ci95_low_mph": -0.09171253095509718,
+        "ci95_high_mph": 0.05469063488203074,
+        "bootstrap_probability_improvement": 0.6869,
+        "bootstrap_repetitions": 10000
+      }
+    },
+    "baseline_plus_ir_mean_and_asymmetry": {
+      "features": [
+        "peak_power_[w]_mean_cmj",
+        "peak_power_[w]_mean_sj",
+        "peak_vertical_force_[n]_max_imtp",
+        "best_rsi_(flight/contact_time)_mean_ht",
+        "peak_eccentric_force_[n]_mean_pp",
+        "body_weight_[lbs]",
+        "ShoulderIR_mean",
+        "ShoulderIR_abs_asymmetry_pct"
+      ],
+      "mae_mph": 3.863119714839516,
+      "rmse_mph": 5.036199686450146,
+      "median_ae_mph": 3.1285174001138643,
+      "p90_ae_mph": 7.48625541358205,
+      "r2": 0.4409650636197303,
+      "bias_mph": -0.05450780624531619,
+      "paired_vs_baseline": {
+        "delta_mae_mph": -0.027877860619732076,
+        "ci95_low_mph": -0.09580506276604467,
+        "ci95_high_mph": 0.03921064264365867,
+        "bootstrap_probability_improvement": 0.7901,
+        "bootstrap_repetitions": 10000
+      }
+    },
+    "baseline_plus_ir_mean_and_signed_difference": {
+      "features": [
+        "peak_power_[w]_mean_cmj",
+        "peak_power_[w]_mean_sj",
+        "peak_vertical_force_[n]_max_imtp",
+        "best_rsi_(flight/contact_time)_mean_ht",
+        "peak_eccentric_force_[n]_mean_pp",
+        "body_weight_[lbs]",
+        "ShoulderIR_mean",
+        "ShoulderIR_left_minus_right"
+      ],
+      "mae_mph": 3.891562564824338,
+      "rmse_mph": 5.06873402666405,
+      "median_ae_mph": 3.0484596790427787,
+      "p90_ae_mph": 7.437746637271225,
+      "r2": 0.4337188932798379,
+      "bias_mph": -0.07767475335649895,
+      "paired_vs_baseline": {
+        "delta_mae_mph": 0.0005649893650902408,
+        "ci95_low_mph": -0.06596854435281622,
+        "ci95_high_mph": 0.06674590059983034,
+        "bootstrap_probability_improvement": 0.4969,
+        "bootstrap_repetitions": 10000
+      }
+    },
+    "shoulder_ir_both_only": {
+      "features": [
+        "ShoulderIRL",
+        "ShoulderIRR"
+      ],
+      "mae_mph": 4.840847067148539,
+      "rmse_mph": 6.146896151849027,
+      "median_ae_mph": 4.192031847594485,
+      "p90_ae_mph": 9.926329250043942,
+      "r2": 0.16719213430175495,
+      "bias_mph": -0.00885560632814132
+    },
+    "shoulder_ir_mean_only": {
+      "features": [
+        "ShoulderIR_mean"
+      ],
+      "mae_mph": 4.8424355563595824,
+      "rmse_mph": 6.130660137236575,
+      "median_ae_mph": 4.169178190235158,
+      "p90_ae_mph": 9.856805768573551,
+      "r2": 0.17158577394044217,
+      "bias_mph": 0.016793604944039742
+    }
+  },
+  "complete_baseline_profile_models": {
+    "baseline_six_hp": {
+      "n": 92,
+      "mae_mph": 3.0820387935426283,
+      "rmse_mph": 3.996352777371961,
+      "median_ae_mph": 2.5327912822707077,
+      "p90_ae_mph": 6.098604461436468,
+      "r2": 0.5449706522052742,
+      "bias_mph": -0.45051601303407013
+    },
+    "baseline_plus_irl": {
+      "n": 92,
+      "mae_mph": 3.073004961456358,
+      "rmse_mph": 3.9882647312152466,
+      "median_ae_mph": 2.4820545430609258,
+      "p90_ae_mph": 5.986689958122475,
+      "r2": 0.546810616980062,
+      "bias_mph": -0.4380870416910268
+    },
+    "baseline_plus_irr": {
+      "n": 92,
+      "mae_mph": 3.0780159230017166,
+      "rmse_mph": 4.076862557053361,
+      "median_ae_mph": 2.3628086295857997,
+      "p90_ae_mph": 6.022602827146971,
+      "r2": 0.5264521036066447,
+      "bias_mph": -0.479314352671531
+    },
+    "baseline_plus_both_raw": {
+      "n": 92,
+      "mae_mph": 3.0959115696233686,
+      "rmse_mph": 4.089396366708779,
+      "median_ae_mph": 2.514050313987518,
+      "p90_ae_mph": 5.996825365194532,
+      "r2": 0.5235358988649967,
+      "bias_mph": -0.5103786421469734
+    },
+    "baseline_plus_ir_mean": {
+      "n": 92,
+      "mae_mph": 3.059568165623412,
+      "rmse_mph": 4.02849120403929,
+      "median_ae_mph": 2.621880985935256,
+      "p90_ae_mph": 5.83766116874565,
+      "r2": 0.5376225873512182,
+      "bias_mph": -0.4771768308878168
+    },
+    "baseline_plus_ir_min": {
+      "n": 92,
+      "mae_mph": 3.0764600758872516,
+      "rmse_mph": 4.021538678259916,
+      "median_ae_mph": 2.552577119672641,
+      "p90_ae_mph": 5.93258105503881,
+      "r2": 0.5392171877609953,
+      "bias_mph": -0.45007798472732896
+    },
+    "baseline_plus_ir_max": {
+      "n": 92,
+      "mae_mph": 3.0675614959124373,
+      "rmse_mph": 4.014340869371424,
+      "median_ae_mph": 2.4887050134045197,
+      "p90_ae_mph": 5.88342606368356,
+      "r2": 0.5408651433388114,
+      "bias_mph": -0.4494027473788393
+    },
+    "baseline_plus_ir_mean_and_asymmetry": {
+      "n": 92,
+      "mae_mph": 3.0609229328350174,
+      "rmse_mph": 4.03472496884171,
+      "median_ae_mph": 2.4291049447240525,
+      "p90_ae_mph": 5.9756824620230855,
+      "r2": 0.5361904967754634,
+      "bias_mph": -0.5014592743897195
+    },
+    "baseline_plus_ir_mean_and_signed_difference": {
+      "n": 92,
+      "mae_mph": 3.0521159988527997,
+      "rmse_mph": 4.054579682330278,
+      "median_ae_mph": 2.513164408061364,
+      "p90_ae_mph": 5.829486677393951,
+      "r2": 0.5316144907559786,
+      "bias_mph": -0.5239564847282011
+    },
+    "shoulder_ir_both_only": {
+      "n": 92,
+      "mae_mph": 4.688661377929517,
+      "rmse_mph": 5.722515769634405,
+      "median_ae_mph": 4.340919379561157,
+      "p90_ae_mph": 9.810369675170602,
+      "r2": 0.06699114133594453,
+      "bias_mph": -1.4075488643935652
+    },
+    "shoulder_ir_mean_only": {
+      "n": 92,
+      "mae_mph": 4.723869082346923,
+      "rmse_mph": 5.7295845468294475,
+      "median_ae_mph": 4.422288208489796,
+      "p90_ae_mph": 9.210411714437507,
+      "r2": 0.06468470640020019,
+      "bias_mph": -1.3207572068294948
+    }
+  }
+}
