@@ -18,6 +18,8 @@ up: "[[高體能測試與球速分析]]"
 
 只保留 CMJ Peak Power 與 SJ Peak Power 時，雙欄模型的整體 MAE 為 4.52 mph、90% 絕對誤差為 8.97 mph、R² 為 0.71。相較五／六欄模型，誤差略增但整體 R² 只小幅下降，表示這兩個絕對 Peak Power 欄位承載了精簡模型的大部分群體層級預測訊號；這不代表它們足以解釋個人的體能至球速轉換效率。
 
+將兩項 Peak Power 完全分開做單變量模型時，CMJ Peak Power-only 的 MAE 為 4.83 mph、R² 為 0.67；SJ Peak Power-only 的 MAE 為 5.05 mph、R² 為 0.62。以未見選手的整體誤差判斷，CMJ absolute Peak Power 的單變量預測力略優於 SJ absolute Peak Power，但兩者都不如合併使用。
+
 ## 驗證設計
 
 - 資料：`high_performance/data/hp_obp.csv`
@@ -36,6 +38,8 @@ up: "[[高體能測試與球速分析]]"
 | 每項測試 1 欄 + 體重，共 6 欄（不含 level） | 4.22 | 5.55 | 3.44 | 8.13 | 0.74 |
 | 上述模型拿掉 IMTP，共 5 欄（不含 level） | 4.27 | 5.60 | 3.49 | 8.42 | 0.73 |
 | CMJ PP + SJ PP，共 2 欄（不含 level） | 4.52 | 5.88 | 3.84 | 8.97 | 0.71 |
+| 只用 CMJ PP，1 欄（不含 level） | 4.83 | 6.22 | 4.10 | 9.76 | 0.67 |
+| 只用 SJ PP，1 欄（不含 level） | 5.05 | 6.67 | 4.17 | 9.87 | 0.62 |
 | VALD PDF 可精確對應 15 欄（不含 level） | 4.18 | 5.50 | 3.43 | 8.32 | 0.74 |
 | CMJ + 體重 + level | 4.14 | 5.44 | 3.30 | 8.53 | 0.75 |
 | CMJ + IMTP + 體重 + level | 4.14 | 5.48 | 3.34 | 8.47 | 0.74 |

@@ -170,6 +170,8 @@ def feature_panels(all_numeric_columns: list[str]) -> dict[str, list[str]]:
             "peak_power_[w]_mean_cmj",
             "peak_power_[w]_mean_sj",
         ],
+        "cmj_peak_power_only": ["peak_power_[w]_mean_cmj"],
+        "sj_peak_power_only": ["peak_power_[w]_mean_sj"],
         "vald_pdf_report_compatible": [
             "jump_height_(imp-mom)_[cm]_mean_cmj",
             "peak_power_[w]_mean_cmj",
