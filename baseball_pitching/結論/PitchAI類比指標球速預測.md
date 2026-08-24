@@ -14,12 +14,18 @@ PitchAI 畫面所列指標中，可與 OpenBiomechanics 欄位較可靠對照的
 
 Peak arm speed 23 m/s、ball path length 172% 與 PK→BR 825 ms 在目前 POI 表沒有確認為同定義的欄位，因此本次未納入模型，也不以 OpenBiomechanics 分布替它們背書。
 
+### 分層散布圖檢查
+
+將畫面數值疊在按競技層級著色的 411 球散布圖後，45°髖肩分離與 99% 身高跨步位於極高端，但沒有對應到單一球速層級；171°肩外旋與 402°/s 膝伸速度則位於多層級重疊區。真正把六指標模型預測往低處拉的是 8°肩水平外展與 32 Nm 肘力矩，兩者均落在相應 OpenBiomechanics 欄位的觀測範圍之外。因此，利用這兩項直接得到較低球速，較可能反映跨系統定義不相容，而非該投手必然只能投低球速。
+
+![PitchAI screenshot values by playing level](../imgs/pitchai_demo_level_scatter.png)
+
 ## 驗證範圍與方法
 
 - 資料：`data/poi/poi_metrics.csv`，411 球、100 位投手；球速 69.5–94.4 mph。
 - 驗證：依 `metadata.user` 做 5-fold GroupKFold，同一投手不跨訓練與測試組。
 - 模型：ExtraTrees；主要比較 4 個較可靠映射與加入 2 個近似映射的敏感度模型。
 - 盲點：這不是 PitchAI 本身的驗證；不同系統的事件、座標、逆動力學與單鏡頭估算誤差可能不一致。Peak arm speed、ball path length、PK→BR 未測試。
-- 重現：`code/py/analyze_pitchai_analog_velocity_prediction.py`；完整結果在 `data/pitchai_analog_prediction/report.json`，逐球 out-of-fold 預測在 `oof_predictions.csv`。
+- 重現：`code/py/analyze_pitchai_analog_velocity_prediction.py` 與 `code/py/plot_pitchai_demo_level_scatter.py`；完整結果在 `data/pitchai_analog_prediction/report.json`，逐球 out-of-fold 預測在 `oof_predictions.csv`。
 
 狀態：**初步支持（類比欄位的預測能力）；PitchAI 跨系統數值效度仍需驗證。**
