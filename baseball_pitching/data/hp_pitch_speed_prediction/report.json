@@ -1,0 +1,1537 @@
+{
+  "data_path": "D:\\baseball\\pitching\\obp\\high_performance\\data\\hp_obp.csv",
+  "validation": "5-fold GroupKFold by athlete_uid",
+  "invalid_zero_speed_rows": 4,
+  "analyses": [
+    {
+      "label": "positive_speed",
+      "target_filter": "pitch_speed_mph > 0",
+      "rows": 1094,
+      "athletes": 740,
+      "predictor_count": 42,
+      "feature_panels": {
+        "cmj_plus_body_weight": [
+          "jump_height_(imp-mom)_[cm]_mean_cmj",
+          "lower-limb_stiffness_[n/m]_mean_cmj",
+          "peak_power_[w]_mean_cmj",
+          "peak_power_/_bm_[w/kg]_mean_cmj",
+          "eccentric_braking_rfd_[n/s]_mean_cmj",
+          "eccentric_duration_[ms]_mean_cmj",
+          "concentric_duration_[ms]_mean_cmj",
+          "rsi-modified_[m/s]_mean_cmj",
+          "countermovement_depth_[cm]_mean_cmj",
+          "cmj_stiffness_asymmetry_[%_l,r]_mean_cmj",
+          "eccentric_deceleration_impulse_(asymmetry)_[%_l,r]_mean_cmj",
+          "p1_concentric_impulse_asymmetry_[%_l,r]_mean_cmj",
+          "p2_concentric_impulse_asymmetry_[%_l,r]_mean_cmj",
+          "concentric_peak_force_[n]_mean_cmj",
+          "eccentric_peak_force_[n]_mean_cmj",
+          "minimum_eccentric_force_[n]_mean_cmj",
+          "body_weight_[lbs]"
+        ],
+        "cmj_imtp_plus_body_weight": [
+          "jump_height_(imp-mom)_[cm]_mean_cmj",
+          "lower-limb_stiffness_[n/m]_mean_cmj",
+          "peak_power_[w]_mean_cmj",
+          "peak_power_/_bm_[w/kg]_mean_cmj",
+          "eccentric_braking_rfd_[n/s]_mean_cmj",
+          "eccentric_duration_[ms]_mean_cmj",
+          "concentric_duration_[ms]_mean_cmj",
+          "rsi-modified_[m/s]_mean_cmj",
+          "countermovement_depth_[cm]_mean_cmj",
+          "cmj_stiffness_asymmetry_[%_l,r]_mean_cmj",
+          "eccentric_deceleration_impulse_(asymmetry)_[%_l,r]_mean_cmj",
+          "p1_concentric_impulse_asymmetry_[%_l,r]_mean_cmj",
+          "p2_concentric_impulse_asymmetry_[%_l,r]_mean_cmj",
+          "concentric_peak_force_[n]_mean_cmj",
+          "eccentric_peak_force_[n]_mean_cmj",
+          "minimum_eccentric_force_[n]_mean_cmj",
+          "peak_vertical_force_[n]_max_imtp",
+          "net_peak_vertical_force_[n]_max_imtp",
+          "force_at_100ms_[n]_max_imtp",
+          "force_at_150ms_[n]_max_imtp",
+          "force_at_200ms_[n]_max_imtp",
+          "relative_strength",
+          "body_weight_[lbs]"
+        ],
+        "all_hp": [
+          "jump_height_(imp-mom)_[cm]_mean_cmj",
+          "lower-limb_stiffness_[n/m]_mean_cmj",
+          "peak_power_[w]_mean_cmj",
+          "peak_power_/_bm_[w/kg]_mean_cmj",
+          "eccentric_braking_rfd_[n/s]_mean_cmj",
+          "eccentric_duration_[ms]_mean_cmj",
+          "concentric_duration_[ms]_mean_cmj",
+          "rsi-modified_[m/s]_mean_cmj",
+          "countermovement_depth_[cm]_mean_cmj",
+          "cmj_stiffness_asymmetry_[%_l,r]_mean_cmj",
+          "eccentric_deceleration_impulse_(asymmetry)_[%_l,r]_mean_cmj",
+          "p1_concentric_impulse_asymmetry_[%_l,r]_mean_cmj",
+          "p2_concentric_impulse_asymmetry_[%_l,r]_mean_cmj",
+          "concentric_peak_force_[n]_mean_cmj",
+          "eccentric_peak_force_[n]_mean_cmj",
+          "minimum_eccentric_force_[n]_mean_cmj",
+          "jump_height_(imp-mom)_[cm]_mean_sj",
+          "peak_power_[w]_mean_sj",
+          "peak_power_/_bm_[w/kg]_mean_sj",
+          "p1_concentric_impulse_asymmetry_[%_l,r]_mean_sj",
+          "p2_concentric_impulse_asymmetry_[%_l,r]_mean_sj",
+          "peak_vertical_force_[n]_max_imtp",
+          "net_peak_vertical_force_[n]_max_imtp",
+          "force_at_100ms_[n]_max_imtp",
+          "force_at_150ms_[n]_max_imtp",
+          "force_at_200ms_[n]_max_imtp",
+          "best_active_stiffness_[n/m]_mean_ht",
+          "best_jump_height_(flight_time)_[cm]_mean_ht",
+          "best_rsi_(flight/contact_time)_mean_ht",
+          "best_rsi_(jump_height/contact_time)_[m/s]_mean_ht",
+          "peak_takeoff_force_[n]_mean_pp",
+          "peak_eccentric_force_[n]_mean_pp",
+          "peak_takeoff_force_asymmetry_[%_l,r]_mean_pp",
+          "peak_eccentric_force_asymmetry_[%_l,r]_mean_pp",
+          "TSpineRomR",
+          "TSpineRomL",
+          "ShoulderERL",
+          "ShoulderERR",
+          "ShoulderIRL",
+          "ShoulderIRR",
+          "relative_strength",
+          "body_weight_[lbs]"
+        ]
+      },
+      "models": {
+        "cmj_plus_body_weight__hp_only__median_baseline": {
+          "mae_mph": 8.425959780621572,
+          "rmse_mph": 11.771000525957175,
+          "median_ae_mph": 6.200000000000003,
+          "p90_ae_mph": 20.300000000000004,
+          "r2": -0.07447283084229261,
+          "bias_mph": 3.0405850091407713,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 5.639246119733923,
+              "rmse_mph": 6.7719504309010485,
+              "median_ae_mph": 5.200000000000003,
+              "p90_ae_mph": 10.199999999999989,
+              "r2": -0.2538898480875893,
+              "bias_mph": -3.049002217294897
+            },
+            "High School": {
+              "n": 555,
+              "mae_mph": 10.845945945945948,
+              "rmse_mph": 15.00276791279013,
+              "median_ae_mph": 6.900000000000006,
+              "p90_ae_mph": 26.02000000000001,
+              "r2": -0.6484410581526034,
+              "bias_mph": 9.377837837837841
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 7.4454545454545435,
+              "rmse_mph": 8.241469418848688,
+              "median_ae_mph": 7.949999999999996,
+              "p90_ae_mph": 11.5,
+              "r2": -0.9476425498787882,
+              "bias_mph": -5.718181818181814
+            }
+          }
+        },
+        "cmj_plus_body_weight__hp_only__ridge": {
+          "mae_mph": 8.946336340412039,
+          "rmse_mph": 147.4847788082163,
+          "median_ae_mph": 3.654752625609582,
+          "p90_ae_mph": 9.307037698717224,
+          "r2": -167.6798019950712,
+          "bias_mph": 4.459191855219692,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 14.928287839102625,
+              "rmse_mph": 229.5846417416174,
+              "median_ae_mph": 3.509744029155513,
+              "p90_ae_mph": 8.698689560166756,
+              "r2": -1440.1776207218786,
+              "bias_mph": 10.453718305261322
+            },
+            "High School": {
+              "n": 555,
+              "mae_mph": 4.7090947887462224,
+              "rmse_mph": 6.1778313763410475,
+              "median_ae_mph": 3.7474682005352378,
+              "p90_ae_mph": 9.698993407568967,
+              "r2": 0.7204865302734478,
+              "bias_mph": 0.4587447365104689
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 5.0123469684242385,
+              "rmse_mph": 6.2485694703342345,
+              "median_ae_mph": 4.336635722522054,
+              "p90_ae_mph": 10.341294946678705,
+              "r2": -0.11959553086739705,
+              "bias_mph": -1.0326635775661746
+            }
+          }
+        },
+        "cmj_plus_body_weight__hp_only__extra_trees": {
+          "mae_mph": 4.1891592161938025,
+          "rmse_mph": 5.477803438402877,
+          "median_ae_mph": 3.4667016378165734,
+          "p90_ae_mph": 8.544465087954581,
+          "r2": 0.7673079376741616,
+          "bias_mph": 0.03847945197287837,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 3.8979843034099972,
+              "rmse_mph": 4.941952884324126,
+              "median_ae_mph": 3.4108558402707985,
+              "p90_ae_mph": 8.019725998445963,
+              "r2": 0.3322267061821573,
+              "bias_mph": -0.46418828629160475
+            },
+            "High School": {
+              "n": 555,
+              "mae_mph": 4.313989020772868,
+              "rmse_mph": 5.788056634553782,
+              "median_ae_mph": 3.3580006870906516,
+              "p90_ae_mph": 8.95692475674031,
+              "r2": 0.7546442812194376,
+              "bias_mph": 0.7043882655966867
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.8941517630587414,
+              "rmse_mph": 6.047924755673843,
+              "median_ae_mph": 4.569787226453116,
+              "p90_ae_mph": 8.85181374614606,
+              "r2": -0.04884837499203498,
+              "bias_mph": -1.5851142026172547
+            }
+          }
+        },
+        "cmj_plus_body_weight__plus_playing_level__median_baseline": {
+          "mae_mph": 8.425959780621572,
+          "rmse_mph": 11.771000525957175,
+          "median_ae_mph": 6.200000000000003,
+          "p90_ae_mph": 20.300000000000004,
+          "r2": -0.07447283084229261,
+          "bias_mph": 3.0405850091407713,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 5.639246119733923,
+              "rmse_mph": 6.7719504309010485,
+              "median_ae_mph": 5.200000000000003,
+              "p90_ae_mph": 10.199999999999989,
+              "r2": -0.2538898480875893,
+              "bias_mph": -3.049002217294897
+            },
+            "High School": {
+              "n": 555,
+              "mae_mph": 10.845945945945948,
+              "rmse_mph": 15.00276791279013,
+              "median_ae_mph": 6.900000000000006,
+              "p90_ae_mph": 26.02000000000001,
+              "r2": -0.6484410581526034,
+              "bias_mph": 9.377837837837841
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 7.4454545454545435,
+              "rmse_mph": 8.241469418848688,
+              "median_ae_mph": 7.949999999999996,
+              "p90_ae_mph": 11.5,
+              "r2": -0.9476425498787882,
+              "bias_mph": -5.718181818181814
+            }
+          }
+        },
+        "cmj_plus_body_weight__plus_playing_level__ridge": {
+          "mae_mph": 8.667556444848985,
+          "rmse_mph": 139.45784549829327,
+          "median_ae_mph": 3.687179605404573,
+          "p90_ae_mph": 9.24890241565419,
+          "r2": -149.81848818172114,
+          "bias_mph": 4.221750479012287,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 14.22613303767624,
+              "rmse_mph": 217.0767086632571,
+              "median_ae_mph": 3.1983133417453757,
+              "p90_ae_mph": 8.832284981884442,
+              "r2": -1287.4225031750234,
+              "bias_mph": 10.196770338789023
+            },
+            "High School": {
+              "n": 555,
+              "mae_mph": 4.759941455531352,
+              "rmse_mph": 6.169915324892487,
+              "median_ae_mph": 3.909713251088718,
+              "p90_ae_mph": 9.725295529475565,
+              "r2": 0.7212023884027949,
+              "bias_mph": 0.043952674427353525
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.8244686687829805,
+              "rmse_mph": 6.1837279466056305,
+              "median_ae_mph": 3.9185672311377147,
+              "p90_ae_mph": 9.132623415098852,
+              "r2": -0.0964799636845668,
+              "bias_mph": -0.05161514842715353
+            }
+          }
+        },
+        "cmj_plus_body_weight__plus_playing_level__extra_trees": {
+          "mae_mph": 4.153819128371374,
+          "rmse_mph": 5.467802680122495,
+          "median_ae_mph": 3.3244142230069116,
+          "p90_ae_mph": 8.431314274573552,
+          "r2": 0.7681568081453267,
+          "bias_mph": 0.020074529342943747,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 3.864988944359584,
+              "rmse_mph": 5.052391906770678,
+              "median_ae_mph": 3.1040145774594947,
+              "p90_ae_mph": 7.661572352092293,
+              "r2": 0.30204743643195675,
+              "bias_mph": 0.07057047850047848
+            },
+            "High School": {
+              "n": 555,
+              "mae_mph": 4.339983853751782,
+              "rmse_mph": 5.734981251749647,
+              "median_ae_mph": 3.4677059346208807,
+              "p90_ae_mph": 8.86148492998871,
+              "r2": 0.7591233812976321,
+              "bias_mph": 0.03876565703068324
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.459966746589462,
+              "rmse_mph": 5.780738574717214,
+              "median_ae_mph": 3.7892870820274496,
+              "p90_ae_mph": 8.331675075150876,
+              "r2": 0.04177695780877211,
+              "bias_mph": -0.35659875402914293
+            }
+          }
+        },
+        "cmj_imtp_plus_body_weight__hp_only__median_baseline": {
+          "mae_mph": 8.425959780621572,
+          "rmse_mph": 11.771000525957175,
+          "median_ae_mph": 6.200000000000003,
+          "p90_ae_mph": 20.300000000000004,
+          "r2": -0.07447283084229261,
+          "bias_mph": 3.0405850091407713,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 5.639246119733923,
+              "rmse_mph": 6.7719504309010485,
+              "median_ae_mph": 5.200000000000003,
+              "p90_ae_mph": 10.199999999999989,
+              "r2": -0.2538898480875893,
+              "bias_mph": -3.049002217294897
+            },
+            "High School": {
+              "n": 555,
+              "mae_mph": 10.845945945945948,
+              "rmse_mph": 15.00276791279013,
+              "median_ae_mph": 6.900000000000006,
+              "p90_ae_mph": 26.02000000000001,
+              "r2": -0.6484410581526034,
+              "bias_mph": 9.377837837837841
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 7.4454545454545435,
+              "rmse_mph": 8.241469418848688,
+              "median_ae_mph": 7.949999999999996,
+              "p90_ae_mph": 11.5,
+              "r2": -0.9476425498787882,
+              "bias_mph": -5.718181818181814
+            }
+          }
+        },
+        "cmj_imtp_plus_body_weight__hp_only__ridge": {
+          "mae_mph": 7.935914930209939,
+          "rmse_mph": 119.71834157519677,
+          "median_ae_mph": 3.4229518815110325,
+          "p90_ae_mph": 9.212834576981706,
+          "r2": -110.14503431437151,
+          "bias_mph": 3.6272862915251642,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 12.812770274040636,
+              "rmse_mph": 186.32168684848764,
+              "median_ae_mph": 3.33562673611398,
+              "p90_ae_mph": 8.777616047376313,
+              "r2": -948.2020335332326,
+              "bias_mph": 8.540171289224967
+            },
+            "High School": {
+              "n": 555,
+              "mae_mph": 4.443208435845041,
+              "rmse_mph": 5.941111783973312,
+              "median_ae_mph": 3.363507536767983,
+              "p90_ae_mph": 9.227093029054668,
+              "r2": 0.7414967016093201,
+              "bias_mph": 0.4255900232059072
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.969896115492618,
+              "rmse_mph": 6.15344228106382,
+              "median_ae_mph": 4.288763237990253,
+              "p90_ae_mph": 10.145949503036647,
+              "r2": -0.0857659393086374,
+              "bias_mph": -1.3587330839910128
+            }
+          }
+        },
+        "cmj_imtp_plus_body_weight__hp_only__extra_trees": {
+          "mae_mph": 4.185113197088631,
+          "rmse_mph": 5.509949445998178,
+          "median_ae_mph": 3.402094057430201,
+          "p90_ae_mph": 8.607478126540158,
+          "r2": 0.7645688583688508,
+          "bias_mph": 0.018115408301322175,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 3.8988493680850285,
+              "rmse_mph": 5.041351443349917,
+              "median_ae_mph": 3.2280107431457026,
+              "p90_ae_mph": 8.328537324897283,
+              "r2": 0.305094429079385,
+              "bias_mph": -0.3928040164381359
+            },
+            "High School": {
+              "n": 555,
+              "mae_mph": 4.328651218538015,
+              "rmse_mph": 5.825920441482245,
+              "median_ae_mph": 3.3779035497834826,
+              "p90_ae_mph": 8.981646220224249,
+              "r2": 0.7514236879379448,
+              "bias_mph": 0.6104065468426325
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.746947117272914,
+              "rmse_mph": 5.754074689463625,
+              "median_ae_mph": 4.407814204499161,
+              "p90_ae_mph": 8.937896494061473,
+              "r2": 0.0505962544572095,
+              "bias_mph": -1.611395061391083
+            }
+          }
+        },
+        "cmj_imtp_plus_body_weight__plus_playing_level__median_baseline": {
+          "mae_mph": 8.425959780621572,
+          "rmse_mph": 11.771000525957175,
+          "median_ae_mph": 6.200000000000003,
+          "p90_ae_mph": 20.300000000000004,
+          "r2": -0.07447283084229261,
+          "bias_mph": 3.0405850091407713,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 5.639246119733923,
+              "rmse_mph": 6.7719504309010485,
+              "median_ae_mph": 5.200000000000003,
+              "p90_ae_mph": 10.199999999999989,
+              "r2": -0.2538898480875893,
+              "bias_mph": -3.049002217294897
+            },
+            "High School": {
+              "n": 555,
+              "mae_mph": 10.845945945945948,
+              "rmse_mph": 15.00276791279013,
+              "median_ae_mph": 6.900000000000006,
+              "p90_ae_mph": 26.02000000000001,
+              "r2": -0.6484410581526034,
+              "bias_mph": 9.377837837837841
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 7.4454545454545435,
+              "rmse_mph": 8.241469418848688,
+              "median_ae_mph": 7.949999999999996,
+              "p90_ae_mph": 11.5,
+              "r2": -0.9476425498787882,
+              "bias_mph": -5.718181818181814
+            }
+          }
+        },
+        "cmj_imtp_plus_body_weight__plus_playing_level__ridge": {
+          "mae_mph": 7.726846668366341,
+          "rmse_mph": 113.51073799812106,
+          "median_ae_mph": 3.3685568830387673,
+          "p90_ae_mph": 9.078940648099376,
+          "r2": -98.91773364634268,
+          "bias_mph": 3.444625298331568,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 12.29090784156726,
+              "rmse_mph": 176.64706449140527,
+              "median_ae_mph": 3.216942603569251,
+              "p90_ae_mph": 8.853071713942882,
+              "r2": -852.1879138927394,
+              "bias_mph": 8.317624886936914
+            },
+            "High School": {
+              "n": 555,
+              "mae_mph": 4.485672955109808,
+              "rmse_mph": 5.926424623689324,
+              "median_ae_mph": 3.470951206327669,
+              "p90_ae_mph": 9.127927816864405,
+              "r2": 0.7427732257972826,
+              "bias_mph": 0.03801990151922041
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.77752646090911,
+              "rmse_mph": 6.093657552337989,
+              "median_ae_mph": 4.0590737521064,
+              "p90_ae_mph": 9.331190403942513,
+              "r2": -0.0647705722347578,
+              "bias_mph": -0.044656738374770584
+            }
+          }
+        },
+        "cmj_imtp_plus_body_weight__plus_playing_level__extra_trees": {
+          "mae_mph": 4.178107878754179,
+          "rmse_mph": 5.522919825730412,
+          "median_ae_mph": 3.361100473137988,
+          "p90_ae_mph": 8.850865595515648,
+          "r2": 0.7634591474902565,
+          "bias_mph": 0.00783356704777746,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 3.855500207427435,
+              "rmse_mph": 5.079268089835324,
+              "median_ae_mph": 3.104527214452162,
+              "p90_ae_mph": 7.9303554040404265,
+              "r2": 0.29460217344461415,
+              "bias_mph": 0.0647158179619566
+            },
+            "High School": {
+              "n": 555,
+              "mae_mph": 4.403227336830658,
+              "rmse_mph": 5.83033624730517,
+              "median_ae_mph": 3.581606886544833,
+              "p90_ae_mph": 9.18351677100023,
+              "r2": 0.7510467240815311,
+              "bias_mph": 0.04355723183736914
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.411684703025966,
+              "rmse_mph": 5.709385663028644,
+              "median_ae_mph": 4.017116960914912,
+              "p90_ae_mph": 8.785323868908888,
+              "r2": 0.06528607796056274,
+              "bias_mph": -0.5089906275035662
+            }
+          }
+        },
+        "all_hp__hp_only__median_baseline": {
+          "mae_mph": 8.425959780621572,
+          "rmse_mph": 11.771000525957175,
+          "median_ae_mph": 6.200000000000003,
+          "p90_ae_mph": 20.300000000000004,
+          "r2": -0.07447283084229261,
+          "bias_mph": 3.0405850091407713,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 5.639246119733923,
+              "rmse_mph": 6.7719504309010485,
+              "median_ae_mph": 5.200000000000003,
+              "p90_ae_mph": 10.199999999999989,
+              "r2": -0.2538898480875893,
+              "bias_mph": -3.049002217294897
+            },
+            "High School": {
+              "n": 555,
+              "mae_mph": 10.845945945945948,
+              "rmse_mph": 15.00276791279013,
+              "median_ae_mph": 6.900000000000006,
+              "p90_ae_mph": 26.02000000000001,
+              "r2": -0.6484410581526034,
+              "bias_mph": 9.377837837837841
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 7.4454545454545435,
+              "rmse_mph": 8.241469418848688,
+              "median_ae_mph": 7.949999999999996,
+              "p90_ae_mph": 11.5,
+              "r2": -0.9476425498787882,
+              "bias_mph": -5.718181818181814
+            }
+          }
+        },
+        "all_hp__hp_only__ridge": {
+          "mae_mph": 5.496508519205325,
+          "rmse_mph": 44.022275395292425,
+          "median_ae_mph": 3.327548090301228,
+          "p90_ae_mph": 8.996610115885854,
+          "r2": -14.028431385538186,
+          "bias_mph": 1.3466723647197276,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 7.037204235449819,
+              "rmse_mph": 68.217024390179,
+              "median_ae_mph": 3.0153593699453722,
+              "p90_ae_mph": 8.081282802158782,
+              "r2": -126.23816245712254,
+              "bias_mph": 3.1562733866379906
+            },
+            "High School": {
+              "n": 555,
+              "mae_mph": 4.332863543038368,
+              "rmse_mph": 5.697264786512816,
+              "median_ae_mph": 3.3578783613711636,
+              "p90_ae_mph": 9.26425046850637,
+              "r2": 0.7622812435932119,
+              "bias_mph": 0.252551060797437
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.939340266323447,
+              "rmse_mph": 6.1770665710839525,
+              "median_ae_mph": 4.529186076736671,
+              "p90_ae_mph": 8.949876254939452,
+              "r2": -0.09411888611839525,
+              "bias_mph": -1.0271087399196543
+            }
+          }
+        },
+        "all_hp__hp_only__extra_trees": {
+          "mae_mph": 4.076234257030402,
+          "rmse_mph": 5.358525185381708,
+          "median_ae_mph": 3.271849029581496,
+          "p90_ae_mph": 8.152273899877919,
+          "r2": 0.7773312697039032,
+          "bias_mph": -0.007943927730525166,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 3.764754638503899,
+              "rmse_mph": 4.946155971566602,
+              "median_ae_mph": 2.957191197691131,
+              "p90_ae_mph": 7.772137741702764,
+              "r2": 0.33109035259133635,
+              "bias_mph": -0.21994115945523376
+            },
+            "High School": {
+              "n": 555,
+              "mae_mph": 4.227632329527537,
+              "rmse_mph": 5.594385162801234,
+              "median_ae_mph": 3.3329245454546736,
+              "p90_ae_mph": 8.6810566176047,
+              "r2": 0.7707890463841609,
+              "bias_mph": 0.40047252762909524
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.71772718566156,
+              "rmse_mph": 5.847981387193216,
+              "median_ae_mph": 4.353184909812491,
+              "p90_ae_mph": 8.111208481240991,
+              "r2": 0.019354783058005642,
+              "bias_mph": -1.4972664415571812
+            }
+          }
+        },
+        "all_hp__plus_playing_level__median_baseline": {
+          "mae_mph": 8.425959780621572,
+          "rmse_mph": 11.771000525957175,
+          "median_ae_mph": 6.200000000000003,
+          "p90_ae_mph": 20.300000000000004,
+          "r2": -0.07447283084229261,
+          "bias_mph": 3.0405850091407713,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 5.639246119733923,
+              "rmse_mph": 6.7719504309010485,
+              "median_ae_mph": 5.200000000000003,
+              "p90_ae_mph": 10.199999999999989,
+              "r2": -0.2538898480875893,
+              "bias_mph": -3.049002217294897
+            },
+            "High School": {
+              "n": 555,
+              "mae_mph": 10.845945945945948,
+              "rmse_mph": 15.00276791279013,
+              "median_ae_mph": 6.900000000000006,
+              "p90_ae_mph": 26.02000000000001,
+              "r2": -0.6484410581526034,
+              "bias_mph": 9.377837837837841
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 7.4454545454545435,
+              "rmse_mph": 8.241469418848688,
+              "median_ae_mph": 7.949999999999996,
+              "p90_ae_mph": 11.5,
+              "r2": -0.9476425498787882,
+              "bias_mph": -5.718181818181814
+            }
+          }
+        },
+        "all_hp__plus_playing_level__ridge": {
+          "mae_mph": 5.446223008669492,
+          "rmse_mph": 42.11739369404561,
+          "median_ae_mph": 3.402311991092212,
+          "p90_ae_mph": 8.934720847132708,
+          "r2": -12.755983837723873,
+          "bias_mph": 1.3008841661965391,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 6.879319159451686,
+              "rmse_mph": 65.23473773691464,
+              "median_ae_mph": 3.089066355108187,
+              "p90_ae_mph": 8.083392803269774,
+              "r2": -115.35624210733249,
+              "bias_mph": 3.0871013774577083
+            },
+            "High School": {
+              "n": 555,
+              "mae_mph": 4.363084523404631,
+              "rmse_mph": 5.687423744943061,
+              "median_ae_mph": 3.4904041282804883,
+              "p90_ae_mph": 9.251158644080249,
+              "r2": 0.7631017705640636,
+              "bias_mph": 0.04144068099041472
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.9327627282061774,
+              "rmse_mph": 6.2195580301819655,
+              "median_ae_mph": 4.296190758861485,
+              "p90_ae_mph": 9.099360695459868,
+              "r2": -0.1092233406232177,
+              "bias_mph": 0.08960202995349466
+            }
+          }
+        },
+        "all_hp__plus_playing_level__extra_trees": {
+          "mae_mph": 4.052093191157468,
+          "rmse_mph": 5.310006659586684,
+          "median_ae_mph": 3.2112012914862547,
+          "p90_ae_mph": 8.463662853535393,
+          "r2": 0.7813453026680541,
+          "bias_mph": -0.019743505242186515,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 3.731649773273046,
+              "rmse_mph": 4.925410969270868,
+              "median_ae_mph": 2.878861428571412,
+              "p90_ae_mph": 7.449394444444465,
+              "r2": 0.33668962281519743,
+              "bias_mph": 0.037056473803354126
+            },
+            "High School": {
+              "n": 555,
+              "mae_mph": 4.247414939119252,
+              "rmse_mph": 5.544227252022369,
+              "median_ae_mph": 3.4039896825397022,
+              "p90_ae_mph": 8.737065754689732,
+              "r2": 0.7748807217746432,
+              "bias_mph": 0.03944689880046485
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.462506956465252,
+              "rmse_mph": 5.686562281570043,
+              "median_ae_mph": 4.151517352092405,
+              "p90_ae_mph": 8.364149861471834,
+              "r2": 0.0727442156468493,
+              "bias_mph": -0.6841465142559403
+            }
+          }
+        }
+      }
+    },
+    {
+      "label": "speed_over_40_sensitivity",
+      "target_filter": "pitch_speed_mph > 40",
+      "rows": 1086,
+      "athletes": 734,
+      "predictor_count": 42,
+      "feature_panels": {
+        "cmj_plus_body_weight": [
+          "jump_height_(imp-mom)_[cm]_mean_cmj",
+          "lower-limb_stiffness_[n/m]_mean_cmj",
+          "peak_power_[w]_mean_cmj",
+          "peak_power_/_bm_[w/kg]_mean_cmj",
+          "eccentric_braking_rfd_[n/s]_mean_cmj",
+          "eccentric_duration_[ms]_mean_cmj",
+          "concentric_duration_[ms]_mean_cmj",
+          "rsi-modified_[m/s]_mean_cmj",
+          "countermovement_depth_[cm]_mean_cmj",
+          "cmj_stiffness_asymmetry_[%_l,r]_mean_cmj",
+          "eccentric_deceleration_impulse_(asymmetry)_[%_l,r]_mean_cmj",
+          "p1_concentric_impulse_asymmetry_[%_l,r]_mean_cmj",
+          "p2_concentric_impulse_asymmetry_[%_l,r]_mean_cmj",
+          "concentric_peak_force_[n]_mean_cmj",
+          "eccentric_peak_force_[n]_mean_cmj",
+          "minimum_eccentric_force_[n]_mean_cmj",
+          "body_weight_[lbs]"
+        ],
+        "cmj_imtp_plus_body_weight": [
+          "jump_height_(imp-mom)_[cm]_mean_cmj",
+          "lower-limb_stiffness_[n/m]_mean_cmj",
+          "peak_power_[w]_mean_cmj",
+          "peak_power_/_bm_[w/kg]_mean_cmj",
+          "eccentric_braking_rfd_[n/s]_mean_cmj",
+          "eccentric_duration_[ms]_mean_cmj",
+          "concentric_duration_[ms]_mean_cmj",
+          "rsi-modified_[m/s]_mean_cmj",
+          "countermovement_depth_[cm]_mean_cmj",
+          "cmj_stiffness_asymmetry_[%_l,r]_mean_cmj",
+          "eccentric_deceleration_impulse_(asymmetry)_[%_l,r]_mean_cmj",
+          "p1_concentric_impulse_asymmetry_[%_l,r]_mean_cmj",
+          "p2_concentric_impulse_asymmetry_[%_l,r]_mean_cmj",
+          "concentric_peak_force_[n]_mean_cmj",
+          "eccentric_peak_force_[n]_mean_cmj",
+          "minimum_eccentric_force_[n]_mean_cmj",
+          "peak_vertical_force_[n]_max_imtp",
+          "net_peak_vertical_force_[n]_max_imtp",
+          "force_at_100ms_[n]_max_imtp",
+          "force_at_150ms_[n]_max_imtp",
+          "force_at_200ms_[n]_max_imtp",
+          "relative_strength",
+          "body_weight_[lbs]"
+        ],
+        "all_hp": [
+          "jump_height_(imp-mom)_[cm]_mean_cmj",
+          "lower-limb_stiffness_[n/m]_mean_cmj",
+          "peak_power_[w]_mean_cmj",
+          "peak_power_/_bm_[w/kg]_mean_cmj",
+          "eccentric_braking_rfd_[n/s]_mean_cmj",
+          "eccentric_duration_[ms]_mean_cmj",
+          "concentric_duration_[ms]_mean_cmj",
+          "rsi-modified_[m/s]_mean_cmj",
+          "countermovement_depth_[cm]_mean_cmj",
+          "cmj_stiffness_asymmetry_[%_l,r]_mean_cmj",
+          "eccentric_deceleration_impulse_(asymmetry)_[%_l,r]_mean_cmj",
+          "p1_concentric_impulse_asymmetry_[%_l,r]_mean_cmj",
+          "p2_concentric_impulse_asymmetry_[%_l,r]_mean_cmj",
+          "concentric_peak_force_[n]_mean_cmj",
+          "eccentric_peak_force_[n]_mean_cmj",
+          "minimum_eccentric_force_[n]_mean_cmj",
+          "jump_height_(imp-mom)_[cm]_mean_sj",
+          "peak_power_[w]_mean_sj",
+          "peak_power_/_bm_[w/kg]_mean_sj",
+          "p1_concentric_impulse_asymmetry_[%_l,r]_mean_sj",
+          "p2_concentric_impulse_asymmetry_[%_l,r]_mean_sj",
+          "peak_vertical_force_[n]_max_imtp",
+          "net_peak_vertical_force_[n]_max_imtp",
+          "force_at_100ms_[n]_max_imtp",
+          "force_at_150ms_[n]_max_imtp",
+          "force_at_200ms_[n]_max_imtp",
+          "best_active_stiffness_[n/m]_mean_ht",
+          "best_jump_height_(flight_time)_[cm]_mean_ht",
+          "best_rsi_(flight/contact_time)_mean_ht",
+          "best_rsi_(jump_height/contact_time)_[m/s]_mean_ht",
+          "peak_takeoff_force_[n]_mean_pp",
+          "peak_eccentric_force_[n]_mean_pp",
+          "peak_takeoff_force_asymmetry_[%_l,r]_mean_pp",
+          "peak_eccentric_force_asymmetry_[%_l,r]_mean_pp",
+          "TSpineRomR",
+          "TSpineRomL",
+          "ShoulderERL",
+          "ShoulderERR",
+          "ShoulderIRL",
+          "ShoulderIRR",
+          "relative_strength",
+          "body_weight_[lbs]"
+        ]
+      },
+      "models": {
+        "cmj_plus_body_weight__hp_only__median_baseline": {
+          "mae_mph": 8.180294659300186,
+          "rmse_mph": 11.215066695944127,
+          "median_ae_mph": 6.199999999999996,
+          "p90_ae_mph": 19.575000000000003,
+          "r2": -0.07081868170390315,
+          "bias_mph": 2.8293738489871103,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 5.606984478935699,
+              "rmse_mph": 6.73143871576021,
+              "median_ae_mph": 5.199999999999989,
+              "p90_ae_mph": 10.150000000000006,
+              "r2": -0.23893247732839673,
+              "bias_mph": -2.978824833702882
+            },
+            "High School": {
+              "n": 547,
+              "mae_mph": 10.432266910420477,
+              "rmse_mph": 14.201693676835747,
+              "median_ae_mph": 6.950000000000003,
+              "p90_ae_mph": 25.220000000000013,
+              "r2": -0.6703069319246386,
+              "bias_mph": 8.977056672760513
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 7.370454545454544,
+              "rmse_mph": 8.143165008989829,
+              "median_ae_mph": 7.6499999999999915,
+              "p90_ae_mph": 10.990000000000004,
+              "r2": -0.9014566183566142,
+              "bias_mph": -5.617045454545454
+            }
+          }
+        },
+        "cmj_plus_body_weight__hp_only__ridge": {
+          "mae_mph": 9.486959370535033,
+          "rmse_mph": 165.96372115735443,
+          "median_ae_mph": 3.6188504255646095,
+          "p90_ae_mph": 9.212146379515595,
+          "r2": -233.49767743013768,
+          "bias_mph": 5.080451851460687,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 16.258712613575124,
+              "rmse_mph": 257.4359308966731,
+              "median_ae_mph": 3.5795577701640724,
+              "p90_ae_mph": 8.657953658991758,
+              "r2": -1811.0499691873824,
+              "bias_mph": 11.847300961972483
+            },
+            "High School": {
+              "n": 547,
+              "mae_mph": 4.618813368293008,
+              "rmse_mph": 6.052217682092119,
+              "median_ae_mph": 3.569696050133544,
+              "p90_ae_mph": 9.22391053175389,
+              "r2": 0.6966492439041545,
+              "bias_mph": 0.50966985030827
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 5.041676991163519,
+              "rmse_mph": 6.271490964122882,
+              "median_ae_mph": 4.087088173386,
+              "p90_ae_mph": 10.162237941119743,
+              "r2": -0.12782457314102103,
+              "bias_mph": -1.1880844463853
+            }
+          }
+        },
+        "cmj_plus_body_weight__hp_only__extra_trees": {
+          "mae_mph": 4.204662261045137,
+          "rmse_mph": 5.503040885499346,
+          "median_ae_mph": 3.4285190196160045,
+          "p90_ae_mph": 8.56889553993518,
+          "r2": 0.742179351207761,
+          "bias_mph": 0.0176048067599111,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 3.947580133295136,
+              "rmse_mph": 5.017107753338968,
+              "median_ae_mph": 3.3507335478556683,
+              "p90_ae_mph": 7.964781720501705,
+              "r2": 0.31176191375178564,
+              "bias_mph": -0.48856607315960565
+            },
+            "High School": {
+              "n": 547,
+              "mae_mph": 4.296873240289333,
+              "rmse_mph": 5.775228060211825,
+              "median_ae_mph": 3.4009609523809416,
+              "p90_ae_mph": 8.685509835795758,
+              "r2": 0.7237805351563669,
+              "bias_mph": 0.7174430382090392
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.949033101598271,
+              "rmse_mph": 6.115661473418464,
+              "median_ae_mph": 4.792953150738171,
+              "p90_ae_mph": 8.889377258948581,
+              "r2": -0.07247413227152788,
+              "bias_mph": -1.7384002586829412
+            }
+          }
+        },
+        "cmj_plus_body_weight__plus_playing_level__median_baseline": {
+          "mae_mph": 8.180294659300186,
+          "rmse_mph": 11.215066695944127,
+          "median_ae_mph": 6.199999999999996,
+          "p90_ae_mph": 19.575000000000003,
+          "r2": -0.07081868170390315,
+          "bias_mph": 2.8293738489871103,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 5.606984478935699,
+              "rmse_mph": 6.73143871576021,
+              "median_ae_mph": 5.199999999999989,
+              "p90_ae_mph": 10.150000000000006,
+              "r2": -0.23893247732839673,
+              "bias_mph": -2.978824833702882
+            },
+            "High School": {
+              "n": 547,
+              "mae_mph": 10.432266910420477,
+              "rmse_mph": 14.201693676835747,
+              "median_ae_mph": 6.950000000000003,
+              "p90_ae_mph": 25.220000000000013,
+              "r2": -0.6703069319246386,
+              "bias_mph": 8.977056672760513
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 7.370454545454544,
+              "rmse_mph": 8.143165008989829,
+              "median_ae_mph": 7.6499999999999915,
+              "p90_ae_mph": 10.990000000000004,
+              "r2": -0.9014566183566142,
+              "bias_mph": -5.617045454545454
+            }
+          }
+        },
+        "cmj_plus_body_weight__plus_playing_level__ridge": {
+          "mae_mph": 9.339763120717933,
+          "rmse_mph": 162.33607375121858,
+          "median_ae_mph": 3.630080644460186,
+          "p90_ae_mph": 9.095396403763367,
+          "r2": -223.3583791814716,
+          "bias_mph": 4.974266829245424,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 15.863479235338541,
+              "rmse_mph": 251.80510381612973,
+              "median_ae_mph": 3.2447129627093148,
+              "p90_ae_mph": 8.566412104558466,
+              "r2": -1732.6479175201848,
+              "bias_mph": 11.953882222508675
+            },
+            "High School": {
+              "n": 547,
+              "mae_mph": 4.6873996816204775,
+              "rmse_mph": 6.053022363255798,
+              "median_ae_mph": 3.7817539330156222,
+              "p90_ae_mph": 9.4821564671099,
+              "r2": 0.6965685736838771,
+              "bias_mph": 0.06878766456008517
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.8243862285862695,
+              "rmse_mph": 6.120836089458658,
+              "median_ae_mph": 3.9756978363523316,
+              "p90_ae_mph": 9.117551365666639,
+              "r2": -0.07428979512923406,
+              "bias_mph": -0.30424952619598417
+            }
+          }
+        },
+        "cmj_plus_body_weight__plus_playing_level__extra_trees": {
+          "mae_mph": 4.136219827881652,
+          "rmse_mph": 5.439156806004954,
+          "median_ae_mph": 3.298842683843951,
+          "p90_ae_mph": 8.529856253468893,
+          "r2": 0.7481306179507546,
+          "bias_mph": 0.02432606443875842,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 3.851241203725891,
+              "rmse_mph": 5.077414945199261,
+              "median_ae_mph": 3.1272742352092706,
+              "p90_ae_mph": 7.544656550671533,
+              "r2": 0.29511680102958004,
+              "bias_mph": 0.08795841132082202
+            },
+            "High School": {
+              "n": 547,
+              "mae_mph": 4.324358309415707,
+              "rmse_mph": 5.6801734033874896,
+              "median_ae_mph": 3.3370803446553197,
+              "p90_ae_mph": 9.142807801962665,
+              "r2": 0.7327983167750918,
+              "bias_mph": 0.0473643413333444
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.427283578962559,
+              "rmse_mph": 5.694128606178869,
+              "median_ae_mph": 3.9724993435292646,
+              "p90_ae_mph": 8.153933081986322,
+              "r2": 0.07027503111324529,
+              "bias_mph": -0.44499354811975533
+            }
+          }
+        },
+        "cmj_imtp_plus_body_weight__hp_only__median_baseline": {
+          "mae_mph": 8.180294659300186,
+          "rmse_mph": 11.215066695944127,
+          "median_ae_mph": 6.199999999999996,
+          "p90_ae_mph": 19.575000000000003,
+          "r2": -0.07081868170390315,
+          "bias_mph": 2.8293738489871103,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 5.606984478935699,
+              "rmse_mph": 6.73143871576021,
+              "median_ae_mph": 5.199999999999989,
+              "p90_ae_mph": 10.150000000000006,
+              "r2": -0.23893247732839673,
+              "bias_mph": -2.978824833702882
+            },
+            "High School": {
+              "n": 547,
+              "mae_mph": 10.432266910420477,
+              "rmse_mph": 14.201693676835747,
+              "median_ae_mph": 6.950000000000003,
+              "p90_ae_mph": 25.220000000000013,
+              "r2": -0.6703069319246386,
+              "bias_mph": 8.977056672760513
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 7.370454545454544,
+              "rmse_mph": 8.143165008989829,
+              "median_ae_mph": 7.6499999999999915,
+              "p90_ae_mph": 10.990000000000004,
+              "r2": -0.9014566183566142,
+              "bias_mph": -5.617045454545454
+            }
+          }
+        },
+        "cmj_imtp_plus_body_weight__hp_only__ridge": {
+          "mae_mph": 8.655540815350314,
+          "rmse_mph": 143.5185898857771,
+          "median_ae_mph": 3.4444906935582225,
+          "p90_ae_mph": 9.059517280444858,
+          "r2": -174.35919183395913,
+          "bias_mph": 4.356396602848023,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 14.535267626356438,
+              "rmse_mph": 222.5971047943352,
+              "median_ae_mph": 3.316326299772342,
+              "p90_ae_mph": 8.68553708838968,
+              "r2": -1353.786523588476,
+              "bias_mph": 10.24578715088926
+            },
+            "High School": {
+              "n": 547,
+              "mae_mph": 4.391554304012791,
+              "rmse_mph": 5.846388626155403,
+              "median_ae_mph": 3.3544266785719827,
+              "p90_ae_mph": 9.19232210111253,
+              "r2": 0.7169316175415616,
+              "bias_mph": 0.4538297246286157
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 5.026493428280563,
+              "rmse_mph": 6.279436631867477,
+              "median_ae_mph": 4.382029026238413,
+              "p90_ae_mph": 10.200901115538164,
+              "r2": -0.13068417898500617,
+              "bias_mph": -1.568729019658569
+            }
+          }
+        },
+        "cmj_imtp_plus_body_weight__hp_only__extra_trees": {
+          "mae_mph": 4.167753520640787,
+          "rmse_mph": 5.499198459860305,
+          "median_ae_mph": 3.3667059261469348,
+          "p90_ae_mph": 8.555443019202997,
+          "r2": 0.7425392652390497,
+          "bias_mph": 0.013880048300605968,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 3.94255388616763,
+              "rmse_mph": 5.093774700154907,
+              "median_ae_mph": 3.3110435569984418,
+              "p90_ae_mph": 7.996464955044928,
+              "r2": 0.29056712585225575,
+              "bias_mph": -0.41423556779291154
+            },
+            "High School": {
+              "n": 547,
+              "mae_mph": 4.245280612730041,
+              "rmse_mph": 5.754064695257178,
+              "median_ae_mph": 3.2903843933844144,
+              "p90_ae_mph": 8.701480649350637,
+              "r2": 0.7258012423614135,
+              "bias_mph": 0.6527195667295715
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.840000290806372,
+              "rmse_mph": 5.8671564105452685,
+              "median_ae_mph": 4.759999058327288,
+              "p90_ae_mph": 8.657525480130941,
+              "r2": 0.012913338786029516,
+              "bias_mph": -1.76299578945471
+            }
+          }
+        },
+        "cmj_imtp_plus_body_weight__plus_playing_level__median_baseline": {
+          "mae_mph": 8.180294659300186,
+          "rmse_mph": 11.215066695944127,
+          "median_ae_mph": 6.199999999999996,
+          "p90_ae_mph": 19.575000000000003,
+          "r2": -0.07081868170390315,
+          "bias_mph": 2.8293738489871103,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 5.606984478935699,
+              "rmse_mph": 6.73143871576021,
+              "median_ae_mph": 5.199999999999989,
+              "p90_ae_mph": 10.150000000000006,
+              "r2": -0.23893247732839673,
+              "bias_mph": -2.978824833702882
+            },
+            "High School": {
+              "n": 547,
+              "mae_mph": 10.432266910420477,
+              "rmse_mph": 14.201693676835747,
+              "median_ae_mph": 6.950000000000003,
+              "p90_ae_mph": 25.220000000000013,
+              "r2": -0.6703069319246386,
+              "bias_mph": 8.977056672760513
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 7.370454545454544,
+              "rmse_mph": 8.143165008989829,
+              "median_ae_mph": 7.6499999999999915,
+              "p90_ae_mph": 10.990000000000004,
+              "r2": -0.9014566183566142,
+              "bias_mph": -5.617045454545454
+            }
+          }
+        },
+        "cmj_imtp_plus_body_weight__plus_playing_level__ridge": {
+          "mae_mph": 8.565065538810344,
+          "rmse_mph": 141.6899343936361,
+          "median_ae_mph": 3.425648046060907,
+          "p90_ae_mph": 9.110668129985427,
+          "r2": -169.9189501025016,
+          "bias_mph": 4.310328733505913,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 14.328944257326798,
+              "rmse_mph": 219.75947615345277,
+              "median_ae_mph": 3.178523902100423,
+              "p90_ae_mph": 8.466235580285812,
+              "r2": -1319.4655264728096,
+              "bias_mph": 10.369740503919209
+            },
+            "High School": {
+              "n": 547,
+              "mae_mph": 4.431447251722799,
+              "rmse_mph": 5.835558325834307,
+              "median_ae_mph": 3.465526704953504,
+              "p90_ae_mph": 9.297300227240086,
+              "r2": 0.7179794014661381,
+              "bias_mph": 0.0671118730537446
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.719382595469031,
+              "rmse_mph": 6.079771668340543,
+              "median_ae_mph": 3.485999072980718,
+              "p90_ae_mph": 9.128234195021022,
+              "r2": -0.0599234226894334,
+              "bias_mph": -0.3687063322788855
+            }
+          }
+        },
+        "cmj_imtp_plus_body_weight__plus_playing_level__extra_trees": {
+          "mae_mph": 4.139324886098975,
+          "rmse_mph": 5.476886367013573,
+          "median_ae_mph": 3.3395583275842817,
+          "p90_ae_mph": 8.47498664141417,
+          "r2": 0.7446242360591397,
+          "bias_mph": 0.03765611636786132,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 3.91364580428473,
+              "rmse_mph": 5.153086949097075,
+              "median_ae_mph": 3.147160429570519,
+              "p90_ae_mph": 7.772673116883084,
+              "r2": 0.2739495714527711,
+              "bias_mph": 0.10048472794606234
+            },
+            "High School": {
+              "n": 547,
+              "mae_mph": 4.282309573741217,
+              "rmse_mph": 5.699302004637028,
+              "median_ae_mph": 3.426715273060239,
+              "p90_ae_mph": 8.634607247030797,
+              "r2": 0.730995625082631,
+              "bias_mph": 0.0784955217839015
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.407150360620772,
+              "rmse_mph": 5.673197967466072,
+              "median_ae_mph": 3.9853583447108676,
+              "p90_ae_mph": 8.778050537406987,
+              "r2": 0.07709748752169576,
+              "bias_mph": -0.5381945493633045
+            }
+          }
+        },
+        "all_hp__hp_only__median_baseline": {
+          "mae_mph": 8.180294659300186,
+          "rmse_mph": 11.215066695944127,
+          "median_ae_mph": 6.199999999999996,
+          "p90_ae_mph": 19.575000000000003,
+          "r2": -0.07081868170390315,
+          "bias_mph": 2.8293738489871103,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 5.606984478935699,
+              "rmse_mph": 6.73143871576021,
+              "median_ae_mph": 5.199999999999989,
+              "p90_ae_mph": 10.150000000000006,
+              "r2": -0.23893247732839673,
+              "bias_mph": -2.978824833702882
+            },
+            "High School": {
+              "n": 547,
+              "mae_mph": 10.432266910420477,
+              "rmse_mph": 14.201693676835747,
+              "median_ae_mph": 6.950000000000003,
+              "p90_ae_mph": 25.220000000000013,
+              "r2": -0.6703069319246386,
+              "bias_mph": 8.977056672760513
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 7.370454545454544,
+              "rmse_mph": 8.143165008989829,
+              "median_ae_mph": 7.6499999999999915,
+              "p90_ae_mph": 10.990000000000004,
+              "r2": -0.9014566183566142,
+              "bias_mph": -5.617045454545454
+            }
+          }
+        },
+        "all_hp__hp_only__ridge": {
+          "mae_mph": 6.792532575277039,
+          "rmse_mph": 86.90886200171329,
+          "median_ae_mph": 3.2612599598108645,
+          "p90_ae_mph": 8.6698495687464,
+          "r2": -63.3043487912402,
+          "bias_mph": 2.6274972173040547,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 10.199105796872031,
+              "rmse_mph": 134.69403653826552,
+              "median_ae_mph": 3.051217127060724,
+              "p90_ae_mph": 8.070676367242925,
+              "r2": -495.0535722081694,
+              "bias_mph": 6.275395832487842
+            },
+            "High School": {
+              "n": 547,
+              "mae_mph": 4.278929860817946,
+              "rmse_mph": 5.596984587006258,
+              "median_ae_mph": 3.3058717198605905,
+              "p90_ae_mph": 8.982148852585173,
+              "r2": 0.7405675938811341,
+              "bias_mph": 0.25842841461586036
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.958170778342754,
+              "rmse_mph": 6.147541443462978,
+              "median_ae_mph": 4.162024896202098,
+              "p90_ae_mph": 9.05586372430364,
+              "r2": -0.0836845493389553,
+              "bias_mph": -1.342066877894188
+            }
+          }
+        },
+        "all_hp__hp_only__extra_trees": {
+          "mae_mph": 4.050272452113374,
+          "rmse_mph": 5.324551037226181,
+          "median_ae_mph": 3.2620865043290337,
+          "p90_ae_mph": 8.454485934371366,
+          "r2": 0.7586328255320471,
+          "bias_mph": 0.00321159665836506,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 3.8360316610785117,
+              "rmse_mph": 5.020552449553467,
+              "median_ae_mph": 3.1016896031747336,
+              "p90_ae_mph": 7.652110317460284,
+              "r2": 0.31081651448157177,
+              "bias_mph": -0.21780419451699018
+            },
+            "High School": {
+              "n": 547,
+              "mae_mph": 4.121061300606376,
+              "rmse_mph": 5.486240314887694,
+              "median_ae_mph": 3.1586908730157433,
+              "p90_ae_mph": 8.667506387556944,
+              "r2": 0.7507325011429671,
+              "bias_mph": 0.43290103347588865
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.708239459284399,
+              "rmse_mph": 5.7968180157001035,
+              "median_ae_mph": 4.455858834776372,
+              "p90_ae_mph": 7.722116715007245,
+              "r2": 0.03643884423592458,
+              "bias_mph": -1.534992950149591
+            }
+          }
+        },
+        "all_hp__plus_playing_level__median_baseline": {
+          "mae_mph": 8.180294659300186,
+          "rmse_mph": 11.215066695944127,
+          "median_ae_mph": 6.199999999999996,
+          "p90_ae_mph": 19.575000000000003,
+          "r2": -0.07081868170390315,
+          "bias_mph": 2.8293738489871103,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 5.606984478935699,
+              "rmse_mph": 6.73143871576021,
+              "median_ae_mph": 5.199999999999989,
+              "p90_ae_mph": 10.150000000000006,
+              "r2": -0.23893247732839673,
+              "bias_mph": -2.978824833702882
+            },
+            "High School": {
+              "n": 547,
+              "mae_mph": 10.432266910420477,
+              "rmse_mph": 14.201693676835747,
+              "median_ae_mph": 6.950000000000003,
+              "p90_ae_mph": 25.220000000000013,
+              "r2": -0.6703069319246386,
+              "bias_mph": 8.977056672760513
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 7.370454545454544,
+              "rmse_mph": 8.143165008989829,
+              "median_ae_mph": 7.6499999999999915,
+              "p90_ae_mph": 10.990000000000004,
+              "r2": -0.9014566183566142,
+              "bias_mph": -5.617045454545454
+            }
+          }
+        },
+        "all_hp__plus_playing_level__ridge": {
+          "mae_mph": 6.753725107008371,
+          "rmse_mph": 86.49822846330207,
+          "median_ae_mph": 3.2452042842794917,
+          "p90_ae_mph": 8.420439000209221,
+          "r2": -62.698124287267255,
+          "bias_mph": 2.61368745694742,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 10.13769027588909,
+              "rmse_mph": 134.05785250214723,
+              "median_ae_mph": 2.935803771917776,
+              "p90_ae_mph": 8.064085555214959,
+              "r2": -490.3787388129417,
+              "bias_mph": 6.332946999372696
+            },
+            "High School": {
+              "n": 547,
+              "mae_mph": 4.2946276723812185,
+              "rmse_mph": 5.587527878952076,
+              "median_ae_mph": 3.422976332380678,
+              "p90_ae_mph": 9.048874034149591,
+              "r2": 0.7414435312236316,
+              "bias_mph": 0.0486027172356329
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.696429715824845,
+              "rmse_mph": 5.995309780567954,
+              "median_ae_mph": 4.1893005272433825,
+              "p90_ae_mph": 8.25517637274019,
+              "r2": -0.030678478034555035,
+              "bias_mph": -0.5031841454554393
+            }
+          }
+        },
+        "all_hp__plus_playing_level__extra_trees": {
+          "mae_mph": 3.996028013624089,
+          "rmse_mph": 5.267424090346644,
+          "median_ae_mph": 3.1590115476191016,
+          "p90_ae_mph": 8.10199591269837,
+          "r2": 0.763784283780709,
+          "bias_mph": 0.003948125272768844,
+          "by_playing_level": {
+            "College": {
+              "n": 451,
+              "mae_mph": 3.7667392304135894,
+              "rmse_mph": 4.988612522955952,
+              "median_ae_mph": 2.930086746031634,
+              "p90_ae_mph": 7.435602936508005,
+              "r2": 0.31955756451884887,
+              "bias_mph": 0.029997585271346387
+            },
+            "High School": {
+              "n": 547,
+              "mae_mph": 4.134169648979295,
+              "rmse_mph": 5.438164585289147,
+              "median_ae_mph": 3.2701069985570257,
+              "p90_ae_mph": 8.535866259740292,
+              "r2": 0.7550820045349668,
+              "bias_mph": 0.0958484073396519
+            },
+            "Pro": {
+              "n": 88,
+              "mae_mph": 4.3124571805404255,
+              "rmse_mph": 5.571246004600678,
+              "median_ae_mph": 4.011331706349289,
+              "p90_ae_mph": 7.868748539682595,
+              "r2": 0.10997004757655138,
+              "bias_mph": -0.7007991559765894
+            }
+          }
+        }
+      }
+    }
+  ]
+}
