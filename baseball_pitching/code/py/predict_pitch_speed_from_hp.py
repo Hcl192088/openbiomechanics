@@ -148,6 +148,17 @@ def feature_panels(all_numeric_columns: list[str]) -> dict[str, list[str]]:
     cmj = [column for column in all_numeric_columns if column.endswith("_cmj")]
     imtp = [column for column in all_numeric_columns if column.endswith("_imtp")]
     return {
+        # One report-compatible winner per test by athlete-grouped univariate
+        # out-of-sample MAE, plus body weight. PPU takeoff and eccentric force
+        # were effectively tied; eccentric force was lower by 0.0015 mph MAE.
+        "six_selected_hp_metrics": [
+            "peak_power_[w]_mean_cmj",
+            "peak_power_[w]_mean_sj",
+            "peak_vertical_force_[n]_max_imtp",
+            "best_rsi_(flight/contact_time)_mean_ht",
+            "peak_eccentric_force_[n]_mean_pp",
+            "body_weight_[lbs]",
+        ],
         "vald_pdf_report_compatible": [
             "jump_height_(imp-mom)_[cm]_mean_cmj",
             "peak_power_[w]_mean_cmj",

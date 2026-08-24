@@ -12,6 +12,8 @@ up: "[[高體能測試與球速分析]]"
 
 若輸入來自一般 VALD PDF、只使用可從報告精確對應的 15 個欄位，HP-only 模型的整體 MAE 為 4.18 mph；在 15 欄皆完整的 400 筆驗證資料中，MAE 為 3.63 mph，90% 絕對誤差為 7.06 mph。這個欄位組合可用於個人 PDF 報告，而不必猜測未出現在報告上的指標。
 
+若每項測試只保留一個最低分組驗證 MAE 的指標，再加體重，六欄模型選到 CMJ Peak Power、SJ Peak Power、IMTP Peak Vertical Force、Hop Test Best RSI、PPU Eccentric Peak Force 與體重。Nested grouped CV 的整體 MAE 為 4.22 mph；15 個候選欄位皆完整的 400 筆中，MAE 為 3.66 mph、90% 絕對誤差為 7.23 mph。PPU Eccentric 與 Takeoff Force 的單變量 MAE 只差 0.0015 mph，且外層 folds 會互換，因此不支持其中一項具有穩定優勢。
+
 ## 驗證設計
 
 - 資料：`high_performance/data/hp_obp.csv`
@@ -27,6 +29,7 @@ up: "[[高體能測試與球速分析]]"
 
 | 可提供資料 | MAE (mph) | RMSE (mph) | 中位絕對誤差 (mph) | 90% 絕對誤差 (mph) | R² |
 |---|---:|---:|---:|---:|---:|
+| 每項測試 1 欄 + 體重，共 6 欄（不含 level） | 4.22 | 5.55 | 3.47 | 8.15 | 0.74 |
 | VALD PDF 可精確對應 15 欄（不含 level） | 4.18 | 5.50 | 3.43 | 8.32 | 0.74 |
 | CMJ + 體重 + level | 4.14 | 5.44 | 3.30 | 8.53 | 0.75 |
 | CMJ + IMTP + 體重 + level | 4.14 | 5.48 | 3.34 | 8.47 | 0.74 |
