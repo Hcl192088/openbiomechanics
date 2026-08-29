@@ -67,6 +67,20 @@ FP–BR敏感度分析以相同正向公式重算後，官方總轉移的體重R
 - 腳本：`baseball_pitching/code/py/analyze_total_shoulder_transfer_duration_power.py`
 - 輸出：`baseball_pitching/code/py/total_shoulder_transfer_outputs/`
 
+### 肩髖分離與軀幹轉速能否解釋「高功率且維持久」
+
+不支持「肩髖分離大 × 軀幹轉速快」形成正向協同，使投手同時具有較高FP–MER正向平均功率與較長FP–MER時間。以100位投手為單位，將兩項結果各自標準化後取較小值 `min(z時間, z功率)` 作為聯合高分數；此定義要求兩項都高，且不使用總能量以避免循環論證。肩髖分離同時檢驗FP值與整段最大值，軀幹轉速使用 `max_torso_rotational_velo`。
+
+FP肩髖分離主要對應時間：與FP–MER時間r=0.350，但與平均正向功率r=0.029；最大肩髖分離的對應較弱（時間r=0.188、功率r=0.097）。軀幹峰值轉速則與平均功率只有小正相關r=0.125，與時間幾乎無關r=-0.042。控制體重後的交互作用對聯合高分數均不顯著：FP分離版本β=-0.017、p=0.818；最大分離版本β=-0.039、p=0.619。
+
+out-of-sample結果也不支持這個組合。聯合高分數的體重基準重複10-fold CV R²=0.093；加入FP分離與軀幹轉速後為0.097，再加交互作用反降至0.079。最大分離版本分別為0.093、0.096、0.086。100位投手中，21位同時高於時間與功率平均；他們比其餘79位重14.22 kg、FP分離大3.18°，但軀幹峰值轉速只快7.2 deg/s，不能把這群人的共同特徵描述成「分離大且軀幹轉速快」。
+
+411球 mixed-effects 敏感度將投手間與投手內訊號拆開後方向一致：FP分離較大主要伴隨較長時間；軀幹轉速較快主要伴隨較高功率。同一投手某球的軀幹轉速比自己平均更快時，功率較高但FP–MER時間反而較短；FP分離比自己平均更大時，時間較長但功率較低。較合理的整理是兩個變項分別承載時間與功率訊號，而非已找到突破兩者負相關權衡的共同機制。以上p值與模型屬探索性、未作多重比較確認。
+
+- 日期：2026-08-29
+- 腳本：`baseball_pitching/code/py/analyze_separation_torso_joint_power_duration.py`
+- 輸出：`baseball_pitching/code/py/separation_torso_joint_power_duration_outputs/`
+
 ### 原始模型如何計算軀幹慣量
 
 OpenBiomechanics的CMZ建立流程先套用 `v6_model_hybrid_lm.mdh`，再執行Filter、Events與 `CMO.v3s`。MDH將軀幹命名為Visual3D預設節段 `RTA`（Thorax/Ab），而 `MASS`、`GEOMETRY`、`IXX`、`IYY`、`IZZ` 均未自訂，因此沿用Visual3D的Dempster節段質量與Hanavan幾何慣量預設值。
