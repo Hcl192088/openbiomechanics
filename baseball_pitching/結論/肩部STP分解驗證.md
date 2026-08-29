@@ -306,6 +306,12 @@ transfer magnitude = min(abs(thorax_stp), abs(upper_arm_stp))
 
 ![STP cumulative bottleneck timeline](../imgs/stp_bottleneck_cumulative_timeline.png)
 
+#### 上臂限制時軀幹是否仍在加速
+
+以411球實際full-signal檢驗；407球具有至少一個上臂限制時間點，涵蓋全部100位投手。軀幹角速度取 `torso_velo_xyz` 的向量大小，11幀Savitzky–Golay平滑後微分；未平滑原始微分作敏感度。軀幹整體net segment power定義為 `thorax_prox_seg_pwr + thorax_dist_seg_pwr + thorax_dist_glove_seg_pwr`。
+
+MER前上臂限制期間，投手平均只有45.6%的時間點仍在增加軀幹角速度大小（原始微分45.6%，結果不受平滑影響）；以STP功率加權後，只有36.1%的上臂限制STP發生在軀幹加速時間。故資料不支持「上臂限制期主要就是軀幹加速期」。但同期間軀幹整體net segment power為正的時間占68.0%，STP加權占64.9%；平均肩部軀幹側STP為-1586 W、上臂側為+1284 W，而軀幹net segment power仍為+752 W。這直接支持較窄的敘述：肩部可一邊從軀幹抽出功率送往上臂，軀幹同時仍從骨盆端與其他來源得到更多淨功率；然而這不保證軀幹角速度當下仍增加，因軀幹net segment power也包含平移能及多端能量流。
+
 ### 總下降量與STP功率的SPM時序
 
 以100位投手為獨立分析單位，每球FP至BR正規化101點後先在投手內平均。預測量為投手平均 `omega_peak^2 - omega_BR^2`，結果曲線為正向STP transfer power，SPM GLM同時控制體重。總STP沒有顯著cluster；拆開限制端後，只有上臂限制功率在FP–BR 52.74–63.87%出現顯著正相關cluster（cluster p = 0.000047，區間平均partial r = 0.354，峰值partial r = 0.378，位於57%）。即使對總STP、上臂限制、軀幹限制三個SPM檢定作Bonferroni校正，該cluster仍成立（adjusted p約0.00014）。軀幹限制功率沒有顯著cluster。
@@ -427,6 +433,7 @@ P_shoulder_transfer_csv = STP_csv + JFP_csv
 - STP/JFP公式對齊：`baseball_pitching/code/py/align_shoulder_power_formula.py`
 - 最後持續限制端交接：`baseball_pitching/code/py/analyze_stp_final_bottleneck_transition.py`
 - 累積限制端時序圖：`baseball_pitching/code/py/plot_stp_bottleneck_cumulative_timeline.py`
+- 上臂限制與軀幹加速驗證：`baseball_pitching/code/py/validate_arm_limited_during_trunk_acceleration.py`
 - 慣量與逐人LOOCV誤差：`baseball_pitching/data/poi/thorax_inertia_estimates.csv`
 - 資料：`baseball_pitching/data/full_sig/energy_flow.csv`
 - 公式來源：官方 `baseball_pitching/code/v3d/CMO.v3s` 中，segment power 定義為 JFP 與 STP 相加。
