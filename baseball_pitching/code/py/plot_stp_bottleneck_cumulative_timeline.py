@@ -92,27 +92,20 @@ def main() -> None:
     thorax = curve.thorax_cumulative_j.to_numpy(float)
     arm_signed = curve.arm_cumulative_signed_j.to_numpy(float)
     balance = curve.signed_bottleneck_balance_j.to_numpy(float)
-    probability = curve.thorax_limiting_probability.to_numpy(float)
     balance_min_index = int(np.nanargmin(balance))
     balance_min_phase = x[balance_min_index]
 
     fig, ax = plt.subplots(figsize=(12, 7))
-    ax.fill_between(x, 0, thorax, color="#d95f02", alpha=.25, label="Thorax-limited cumulative STP")
-    ax.fill_between(x, 0, arm_signed, color="#1b9e77", alpha=.25, label="Upper-arm-limited cumulative STP")
-    ax.plot(x, thorax, color="#d95f02", linewidth=2)
-    ax.plot(x, arm_signed, color="#1b9e77", linewidth=2)
-    ax.plot(x, balance, color="black", linewidth=2.5, label="Signed cumulative balance")
+    ax.plot(x, balance, color="black", linewidth=3,
+            label="Signed cumulative bottleneck energy")
     ax.axhline(0, color="0.35", linewidth=.8)
     ymin, ymax = ax.get_ylim()
-    for i in range(len(x) - 1):
-        color = "#d95f02" if probability[i] >= .5 else "#1b9e77"
-        ax.axvspan(x[i], x[i + 1], color=color, alpha=.035, linewidth=0)
     ax.axvline(transition_median * 100, color="#6a3d9a", linestyle="--", linewidth=2,
                label=f"Final sustained A→T transition ({transition_median*100:.1f}%)")
     ax.scatter([balance_min_phase], [balance[balance_min_index]], color="black", s=42, zorder=5)
     ax.annotate(
         f"Cumulative balance turns upward\n({balance_min_phase:.0f}%)",
-        (balance_min_phase, balance[balance_min_index]), xytext=(-105, -42),
+        (balance_min_phase, balance[balance_min_index]), xytext=(-125, 28),
         textcoords="offset points", arrowprops={"arrowstyle": "->", "color": "black"},
         fontsize=9,
     )
@@ -121,11 +114,19 @@ def main() -> None:
                label=f"MER median ({mer_median*100:.1f}%)")
     ax.set_xlim(0, 100)
     ax.set_xlabel("Normalized FP→BR time (%)")
-    ax.set_ylabel("Mean cumulative STP energy by limiting side (J)")
-    ax.set_title("Shoulder STP bottleneck timeline (100 pitchers)\nGreen/negative: upper-arm limited; orange/positive: thorax limited")
+    ax.set_ylabel("Signed cumulative bottleneck STP energy (J)")
+    ax.set_title("Shoulder STP cumulative bottleneck balance (100 pitchers)\nDownward slope: upper-arm bottleneck; upward slope: thorax bottleneck")
     ax.text(0, ymin, " FP", va="bottom", ha="left", fontweight="bold")
     ax.text(100, ymin, "BR ", va="bottom", ha="right", fontweight="bold")
-    ax.legend(loc="upper left", fontsize=9, frameon=True)
+    ax.annotate("Upper-arm bottleneck dominates added STP\n(line slopes downward)",
+                (35, np.interp(35, x, balance)), xytext=(-80, 38),
+                textcoords="offset points", fontsize=9,
+                arrowprops={"arrowstyle": "->", "color": "#1b9e77"})
+    ax.annotate("Thorax bottleneck dominates added STP\n(line slopes upward)",
+                (84, np.interp(84, x, balance)), xytext=(20, -35),
+                textcoords="offset points", fontsize=9,
+                arrowprops={"arrowstyle": "->", "color": "#d95f02"})
+    ax.legend(loc="lower left", fontsize=9, frameon=True)
     ax.grid(axis="y", alpha=.2)
     fig.tight_layout()
     fig.savefig(OUT_FIG, dpi=220, bbox_inches="tight")
