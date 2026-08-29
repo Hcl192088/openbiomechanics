@@ -388,7 +388,7 @@ P_shoulder_transfer = STP + JFP
 E_positive_FP_MER = integral_FP^MER max(P_shoulder_transfer, 0) dt
 ```
 
-現有CSV沒有直接匯出Visual3D `ProxEndVel`，所以 `force * d(shoulder_jc)/dt` 不能精確重建JFP；最合理符號版本仍只有r=0.520、MAE 782.6 W。可改用同一肩關節在軀幹側的segment-power守恆，而且不需要猜測速度座標系：
+現有CSV沒有直接匯出Visual3D `ProxEndVel`，所以 `force * d(shoulder_jc)/dt` 不能精確重建JFP；最合理符號版本仍只有r=0.520、MAE 782.6 W。另以肩、肘關節中心中點近似上臂中心，再微分並與同一肩力點乘，結果更差（r=0.457、MAE 1639.6 W）；因此資料不支持把 `ProxEndVel` 改解釋為上臂中心速度。可改用同一肩關節在軀幹側的segment-power守恆，而且不需要猜測速度座標系：
 
 ```text
 P_thorax_STP_csv = -sum_axis(

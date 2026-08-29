@@ -53,7 +53,9 @@ def main() -> None:
     landmarks = pd.read_csv(
         ROOT / "data/full_sig/landmarks.csv",
         usecols=[
-            "session_pitch", "time", *[f"shoulder_jc_{a}" for a in "xyz"]
+            "session_pitch", "time",
+            *[f"shoulder_jc_{a}" for a in "xyz"],
+            *[f"elbow_jc_{a}" for a in "xyz"],
         ],
     )
     data = energy.merge(kinetics, on=["session_pitch", "time"], validate="one_to_one")
@@ -63,8 +65,18 @@ def main() -> None:
         raise ValueError("Exact time-key merge lost rows; no fallback permitted")
     data = data.sort_values(["session_pitch", "time"])
     for axis in "xyz":
+        data[f"upper_arm_mid_{axis}"] = (
+            data[f"shoulder_jc_{axis}"] + data[f"elbow_jc_{axis}"]
+        ) / 2
         data[f"shoulder_jc_vel_{axis}"] = data.groupby("session_pitch", sort=False)[
             f"shoulder_jc_{axis}"
+        ].transform(
+            lambda s: np.gradient(
+                s.to_numpy(float), data.loc[s.index, "time"].to_numpy(float)
+            )
+        )
+        data[f"upper_arm_mid_vel_{axis}"] = data.groupby("session_pitch", sort=False)[
+            f"upper_arm_mid_{axis}"
         ].transform(
             lambda s: np.gradient(
                 s.to_numpy(float), data.loc[s.index, "time"].to_numpy(float)
@@ -74,12 +86,18 @@ def main() -> None:
     window = data[(data.time >= data.fp_poi_time) & (data.time <= data.MER_time)].copy()
     jfp = window.shoulder_energy_transfer_jfp.to_numpy(float)
     velocity = window[[f"shoulder_jc_vel_{a}" for a in "xyz"]].to_numpy(float)
+    midpoint_velocity = window[
+        [f"upper_arm_mid_vel_{a}" for a in "xyz"]
+    ].to_numpy(float)
     rows = []
     for side in ["thorax", "upper_arm"]:
         force = window[[f"shoulder_{side}_force_{a}" for a in "xyz"]].to_numpy(float)
         dot = np.einsum("ij,ij->i", force, velocity)
         rows.append(metrics(f"{side}_force_dot_d_shoulder_jc", jfp, dot))
         rows.append(metrics(f"negative_{side}_force_dot_d_shoulder_jc", jfp, -dot))
+        midpoint_dot = np.einsum("ij,ij->i", force, midpoint_velocity)
+        rows.append(metrics(f"{side}_force_dot_d_upper_arm_mid", jfp, midpoint_dot))
+        rows.append(metrics(f"negative_{side}_force_dot_d_upper_arm_mid", jfp, -midpoint_dot))
 
     official_stp = window.shoulder_energy_transfer_stp.to_numpy(float)
     official_thorax = (
@@ -144,7 +162,7 @@ def main() -> None:
     result.to_csv(OUT / "candidate_validation.csv", index=False)
     print(f"coverage: rows={len(data)}, FP-MER rows={len(window)}, pitches={window.session_pitch.nunique()}")
     print("\nJFP candidates")
-    print(result[result.candidate.str.contains("shoulder_jc|jfp_from", regex=True)].to_string(index=False, float_format=lambda x: f"{x:.6f}"))
+    print(result[result.candidate.str.contains("shoulder_jc|upper_arm_mid|jfp_from", regex=True)].to_string(index=False, float_format=lambda x: f"{x:.6f}"))
     print("\nBest thorax-side STP candidates")
     print(result[result.candidate.str.startswith("thorax_stp")].sort_values("mae_w").head(8).to_string(index=False, float_format=lambda x: f"{x:.6f}"))
     print("\nBest upper-arm-side STP candidates")
