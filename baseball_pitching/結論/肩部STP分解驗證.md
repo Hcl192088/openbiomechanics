@@ -296,6 +296,12 @@ transfer magnitude = min(abs(thorax_stp), abs(upper_arm_stp))
 
 功率累積確認時間占比會高估末段軀幹限制的重要性。FP至BR前30%只累積22.9%的transfer power；50–80%單獨貢獻44.6%；至MER已累積88.5%，MER後只剩11.5%。MER前的累積功率中60.3%由上臂側限制，MER後則88.9%由軀幹側限制。換成全部transfer power的四分法，最大單一區塊是「MER前＋上臂限制」53.4%，其次為「MER前＋軀幹限制」35.2%，「MER後＋軀幹限制」10.2%，「MER後＋上臂限制」1.3%。因此能量大宗確實落在MER前的上臂限制區間；末段雖幾乎都由軀幹限制，但剩餘可轉移功率已少。
 
+#### 最後一次持續上臂→軀幹限制交接
+
+為避免早期短暫來回切換干擾，主要交接事件定義為：最後一次進入軀幹限制，之後所有有效STP時間點直到BR都不再回到上臂限制。411球中372球（90.5%；涵蓋96位投手）可定義此事件。交接中位位於FP–BR 72.3%（IQR 63.3–78.6%），相對MER為提前8.3 ms（IQR提前16.7 ms至延後0.7 ms）；75.0%的球在MER前完成交接。交接後仍剩餘的正向STP能量中位為23.3%（IQR 11.4–35.4%）。
+
+控制體重後，投手平均交接早晚與FP–BR正向STP能量（partial r=-0.122，p=0.237）、FP–MER正向STP能量（r=-0.110，p=0.285）、有效STP持續時間（r=0.097，p=0.348）皆無明確關係；較早交接與較高有效期平均功率只有弱方向訊號（r=-0.184，p=0.073）。因此目前可把「約MER前8 ms完成由上臂限制轉為軀幹限制」當作群體時序描述，不能把它定成越早或越晚越好的教練門檻。下一步應比較交接前後的上臂絕對角速度、肩力矩及肩部姿勢，找出造成交接的可操作動作，而不是直接訓練交接百分比。
+
 ### 總下降量與STP功率的SPM時序
 
 以100位投手為獨立分析單位，每球FP至BR正規化101點後先在投手內平均。預測量為投手平均 `omega_peak^2 - omega_BR^2`，結果曲線為正向STP transfer power，SPM GLM同時控制體重。總STP沒有顯著cluster；拆開限制端後，只有上臂限制功率在FP–BR 52.74–63.87%出現顯著正相關cluster（cluster p = 0.000047，區間平均partial r = 0.354，峰值partial r = 0.378，位於57%）。即使對總STP、上臂限制、軀幹限制三個SPM檢定作Bonferroni校正，該cluster仍成立（adjusted p約0.00014）。軀幹限制功率沒有顯著cluster。
@@ -415,6 +421,7 @@ P_shoulder_transfer_csv = STP_csv + JFP_csv
 - 肩外轉速度分析：`baseball_pitching/code/py/analyze_shoulder_external_rotation_velocity_transfer.py`
 - FP至MER STP/JFP守恆分解：`baseball_pitching/code/py/analyze_stp_jfp_positive_transfer_components.py`
 - STP/JFP公式對齊：`baseball_pitching/code/py/align_shoulder_power_formula.py`
+- 最後持續限制端交接：`baseball_pitching/code/py/analyze_stp_final_bottleneck_transition.py`
 - 慣量與逐人LOOCV誤差：`baseball_pitching/data/poi/thorax_inertia_estimates.csv`
 - 資料：`baseball_pitching/data/full_sig/energy_flow.csv`
 - 公式來源：官方 `baseball_pitching/code/v3d/CMO.v3s` 中，segment power 定義為 JFP 與 STP 相加。
