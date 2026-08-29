@@ -390,6 +390,8 @@ E_positive_FP_MER = integral_FP^MER max(P_shoulder_transfer, 0) dt
 
 現有CSV沒有直接匯出Visual3D `ProxEndVel`，所以 `force * d(shoulder_jc)/dt` 不能精確重建JFP；最合理符號版本仍只有r=0.520、MAE 782.6 W。另以肩、肘關節中心中點近似上臂中心，再微分並與同一肩力點乘，結果更差（r=0.457、MAE 1639.6 W）；因此資料不支持把 `ProxEndVel` 改解釋為上臂中心速度。可改用同一肩關節在軀幹側的segment-power守恆，而且不需要猜測速度座標系：
 
+兩組肩力的向量大小幾乎一致（thorax與upper-arm表示的norm r=0.9974、MAE 5.20 N），但同名xyz分量相關很低，確認它們主要是同一物理力在不同局部座標基底下的表示。以 `thorax_prox`、`thorax_dist`、`thorax_ap` 重建逐幀軀幹正交基底後，最佳右手軸映射為局部 `x→前後軸、y→反向左右軸、z→軀幹長軸`；旋轉至LAB再與肩中心速度點乘，JFP提升至r=0.9353、MAE 268.4 W。Savitzky–Golay 5至21幀微分只將最佳結果微幅改善至r=0.9354、MAE 267.6 W，故剩餘差異不能只歸因於速度平滑窗；較可能來自landmark重建的segment姿態不等同Visual3D內部6-DOF `RTA_ROTMAT`，或CSV未保留官方 `ProxEndVel` 的完整精度。此旋轉重建可支持座標系診斷，但仍不應取代官方JFP。
+
 ```text
 P_thorax_STP_csv = -sum_axis(
     shoulder_thorax_moment_axis * radians(torso_velo_axis)
