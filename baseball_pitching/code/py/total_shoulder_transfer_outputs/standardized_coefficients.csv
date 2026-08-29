@@ -1,0 +1,13 @@
+outcome_type,term,standardized_beta,p
+full_fp_br_stp,session_mass_kg,0.02134024935026959,0.19039009861687117
+full_fp_br_stp,fp_br_duration_s,0.5148371288328664,7.218044659386302e-56
+full_fp_br_stp,stp_mean_power_w,1.0123853817748234,9.621461226806024e-78
+full_fp_br_jfp,session_mass_kg,0.019920623124391502,0.15735904604762277
+full_fp_br_jfp,fp_br_duration_s,0.4116772504733621,7.742906267266976e-52
+full_fp_br_jfp,jfp_mean_power_w,1.008207901692465,3.0736267414996026e-84
+reconstructed_total,session_mass_kg,0.029729388028056372,0.1047284371228853
+reconstructed_total,fp_br_duration_s,0.5474583122997986,1.8715723706957756e-54
+reconstructed_total,total_mean_power_w,1.0121392689824913,1.051253622112276e-72
+official_total,session_mass_kg,0.1578890174790723,5.306552290976176e-06
+official_total,fp_br_duration_s,0.5152306625497223,2.4644193915173003e-31
+official_total,total_mean_power_w,0.8908909259875989,6.883451829672963e-45
