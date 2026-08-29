@@ -1,0 +1,2 @@
+n_pitches,n_athletes,knee_peak_precedes_trunk_peak_percent,knee_to_trunk_peak_ms_median,knee_to_trunk_peak_ms_q1,knee_to_trunk_peak_ms_q3,exposure_reconstruction_exact_n,exposure_reconstruction_correlation,exposure_reconstruction_median_abs_error,exposure_reconstruction_max_abs_error
+411,100,55.961070559610704,0.0,-8.35000000000008,61.09999999999993,224,0.9453425256663764,0.0,253.7923
