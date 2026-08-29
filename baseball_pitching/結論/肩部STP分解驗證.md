@@ -360,17 +360,59 @@ min(abs(thorax_dist_seg_pwr), abs(upper_arm_prox_seg_pwr))
 
 這表示原假說需要拆開修正：FP肩髖分離較大與兩個分量都呈獨立正向關係，且對STP較強；軀幹峰值轉速對STP沒有獨立顯著關係，對JFP只有邊界訊號。換用最大肩髖分離時，分離本身對STP與JFP皆未達顯著，顯示訊號較偏向「FP當下已建立的分離」，不是單純追求更大的最大值。模型的投手外CV解釋仍有限，尚不能說已找到「同時高功率且維持久」的完整原因。
 
-JFP的物理公式端仍未完成驗證。直接以匯出的 `shoulder_thorax_force` 點乘全域座標肩中心速度，逐球與官方JFP的平均相關為-0.503、MAE 3019 W，顯示兩者座標系或符號尚未對齊；因此本輪不把力大小、肩中心速度或方向配對列為正式JFP解釋量。下一步必須先取得或重建與Visual3D `ProxEndForce`、`ProxEndVel` 相同座標定義，再檢驗JFP究竟來自較大的力、較快的肩中心平移，還是更有利的力速方向配對。
+### STP＋JFP的具體公式與CSV對齊
+
+令肩關節作用於上臂的力與力矩為 `F`、`M`，肩關節中心速度為 `v_s`，上臂與軀幹的絕對角速度為 `omega_A`、`omega_T`。Visual3D原始定義為：
+
+```text
+JFP = dot(F, v_s)
+P_arm_STP = dot(M, omega_A)
+P_thorax_STP = dot(-M, omega_T)
+```
+
+STP transfer不是直接將兩側相加，而是只有兩側torque power異號時，取可從一側流入另一側的共同部分：
+
+```text
+if P_thorax_STP < 0 and P_arm_STP > 0:
+    STP = +min(abs(P_thorax_STP), abs(P_arm_STP))
+elif P_thorax_STP > 0 and P_arm_STP < 0:
+    STP = -min(abs(P_thorax_STP), abs(P_arm_STP))
+else:
+    STP = 0
+```
+
+因此瞬時肩部總轉移功率與FP至MER正向總能量分別是：
+
+```text
+P_shoulder_transfer = STP + JFP
+E_positive_FP_MER = integral_FP^MER max(P_shoulder_transfer, 0) dt
+```
+
+現有CSV沒有直接匯出Visual3D `ProxEndVel`，所以 `force * d(shoulder_jc)/dt` 不能精確重建JFP；最合理符號版本仍只有r=0.520、MAE 782.6 W。可改用同一肩關節在軀幹側的segment-power守恆，而且不需要猜測速度座標系：
+
+```text
+P_thorax_STP_csv = -sum_axis(
+    shoulder_thorax_moment_axis * radians(torso_velo_axis)
+)
+JFP_csv = P_thorax_STP_csv - thorax_dist_seg_pwr
+P_arm_STP_csv = upper_arm_prox_seg_pwr - JFP_csv
+STP_csv = bottleneck(P_thorax_STP_csv, P_arm_STP_csv)
+P_shoulder_transfer_csv = STP_csv + JFP_csv
+```
+
+411球FP至MER共16,425幀的驗證結果：`JFP_csv`對官方JFP為r=0.9975、MAE 42.72 W；`STP_csv`對官方STP為r=0.9942、MAE 42.55 W；兩者誤差在總功率中幾乎互相抵銷，`STP_csv+JFP_csv`對官方 `STP+JFP` 為r=0.999994、MAE 0.167 W。若目的只是重建總肩部轉移，這套CSV公式已對齊；若要把JFP再拆成力大小、肩中心速度與夾角，仍需另行匯出與Visual3D相同的 `RAR::ProxEndForce` 和 `RAR::ProxEndVel` 向量，現有有限差分速度不可取代。
 
 ## 重現
 
 - 日期：2026-07-29
 - FP至MER守恆分解日期：2026-08-29
+- STP/JFP公式對齊日期：2026-08-30
 - 腳本：`baseball_pitching/code/py/validate_shoulder_stp_decomposition.py`
 - 慣量重建腳本：`baseball_pitching/code/py/calculate_thorax_inertia.py`
 - 軀幹限制期同窗分析：`baseball_pitching/code/py/analyze_thorax_limited_trunk_energy.py`
 - 肩外轉速度分析：`baseball_pitching/code/py/analyze_shoulder_external_rotation_velocity_transfer.py`
 - FP至MER STP/JFP守恆分解：`baseball_pitching/code/py/analyze_stp_jfp_positive_transfer_components.py`
+- STP/JFP公式對齊：`baseball_pitching/code/py/align_shoulder_power_formula.py`
 - 慣量與逐人LOOCV誤差：`baseball_pitching/data/poi/thorax_inertia_estimates.csv`
 - 資料：`baseball_pitching/data/full_sig/energy_flow.csv`
 - 公式來源：官方 `baseball_pitching/code/v3d/CMO.v3s` 中，segment power 定義為 JFP 與 STP 相加。
