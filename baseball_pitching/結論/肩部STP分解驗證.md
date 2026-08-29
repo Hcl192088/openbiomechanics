@@ -345,13 +345,32 @@ min(abs(thorax_dist_seg_pwr), abs(upper_arm_prox_seg_pwr))
 
 這是對兩側總SP取最小值，混入JFP，不是肩關節兩側STP的分解。舊版72.4%另使用不受信任的 `fp_100_time`；後續以 `fp_poi_time` 重算得到的59.6%仍沿用錯誤SP公式。兩者均不應保留為正式結論。
 
+## FP至MER正向總轉移的STP/JFP守恆分解
+
+正向總能量不能拆成 `max(STP,0)+max(JFP,0)`，因為這會重複計入彼此抵銷的功率。本分析只在每幀 `STP+JFP>0` 時保留兩個有號分量，再分別積分；411球的 `STP分量+JFP分量=正向總轉移` 最大誤差僅 `1.7e-13 J`。
+
+以100位投手先在個人內平均，FP至MER正向總轉移平均317.97 J，其中STP分量139.27 J（43.8%），JFP分量178.70 J（56.2%）。正向總轉移期間，STP幾乎不出現負向抵銷（平均-0.001 J），JFP平均抵銷-0.92 J。因此目前應將FP至MER總量理解為「JFP略多於STP」，而非單由某一分量主導。
+
+控制體重後，將肩髖分離與軀幹峰值轉速加入固定模型：
+
+| 結果 | 體重CV R² | 體重＋FP肩髖分離＋軀幹轉速CV R² | FP肩髖分離標準化beta（p） | 軀幹轉速標準化beta（p） |
+|---|---:|---:|---:|---:|
+| STP分量 | 0.093 | 0.174 | 0.278（0.001） | 0.130（0.124） |
+| JFP分量 | 0.244 | 0.305 | 0.193（0.010） | 0.148（0.053） |
+
+這表示原假說需要拆開修正：FP肩髖分離較大與兩個分量都呈獨立正向關係，且對STP較強；軀幹峰值轉速對STP沒有獨立顯著關係，對JFP只有邊界訊號。換用最大肩髖分離時，分離本身對STP與JFP皆未達顯著，顯示訊號較偏向「FP當下已建立的分離」，不是單純追求更大的最大值。模型的投手外CV解釋仍有限，尚不能說已找到「同時高功率且維持久」的完整原因。
+
+JFP的物理公式端仍未完成驗證。直接以匯出的 `shoulder_thorax_force` 點乘全域座標肩中心速度，逐球與官方JFP的平均相關為-0.503、MAE 3019 W，顯示兩者座標系或符號尚未對齊；因此本輪不把力大小、肩中心速度或方向配對列為正式JFP解釋量。下一步必須先取得或重建與Visual3D `ProxEndForce`、`ProxEndVel` 相同座標定義，再檢驗JFP究竟來自較大的力、較快的肩中心平移，還是更有利的力速方向配對。
+
 ## 重現
 
 - 日期：2026-07-29
+- FP至MER守恆分解日期：2026-08-29
 - 腳本：`baseball_pitching/code/py/validate_shoulder_stp_decomposition.py`
 - 慣量重建腳本：`baseball_pitching/code/py/calculate_thorax_inertia.py`
 - 軀幹限制期同窗分析：`baseball_pitching/code/py/analyze_thorax_limited_trunk_energy.py`
 - 肩外轉速度分析：`baseball_pitching/code/py/analyze_shoulder_external_rotation_velocity_transfer.py`
+- FP至MER STP/JFP守恆分解：`baseball_pitching/code/py/analyze_stp_jfp_positive_transfer_components.py`
 - 慣量與逐人LOOCV誤差：`baseball_pitching/data/poi/thorax_inertia_estimates.csv`
 - 資料：`baseball_pitching/data/full_sig/energy_flow.csv`
 - 公式來源：官方 `baseball_pitching/code/v3d/CMO.v3s` 中，segment power 定義為 JFP 與 STP 相加。
