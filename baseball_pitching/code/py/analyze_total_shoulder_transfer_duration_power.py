@@ -1,4 +1,9 @@
-"""Analyze FP-to-BR shoulder STP, JFP, and total transfer duration/power."""
+"""Analyze positive shoulder transfer power over FP-MER and FP-BR.
+
+Official FP-BR shoulder transfer is reconstructed as the integral of
+max(STP + JFP, 0). FP-MER is the primary window for studying how pitchers
+combine high positive transfer power with a long energy-transfer interval.
+"""
 
 from __future__ import annotations
 
@@ -16,28 +21,45 @@ OUTPUT_DIR = Path(__file__).resolve().with_name("total_shoulder_transfer_outputs
 RANDOM_STATE = 20260829
 
 
-def summarize_pitch(group: pd.DataFrame) -> pd.Series:
-    group = group.sort_values("time")
-    time = group["time"].to_numpy(float)
+def integrate_window(group: pd.DataFrame, start: float, end: float) -> dict[str, float]:
+    window = group[(group["time"] >= start) & (group["time"] <= end)].sort_values("time")
+    time = window["time"].to_numpy(float)
     if len(time) < 2 or np.any(np.diff(time) <= 0):
-        raise ValueError(f"Invalid FP-BR time series for {group.name}")
-    stp_j = float(np.trapezoid(group["shoulder_energy_transfer_stp"], time))
-    jfp_j = float(np.trapezoid(group["shoulder_energy_transfer_jfp"], time))
-    duration_s = float(time[-1] - time[0])
-    return pd.Series(
-        {
-            "fp_br_duration_s": duration_s,
-            "stp_j": stp_j,
-            "jfp_j": jfp_j,
-            "reconstructed_total_j": stp_j + jfp_j,
-            "stp_mean_power_w": stp_j / duration_s,
-            "jfp_mean_power_w": jfp_j / duration_s,
-            "total_mean_power_w": (stp_j + jfp_j) / duration_s,
-        }
+        raise ValueError(f"Invalid time series for {group.name}: {start} to {end}")
+    total_power = (
+        window["shoulder_energy_transfer_stp"]
+        + window["shoulder_energy_transfer_jfp"]
+    ).to_numpy(float)
+    positive_power = np.maximum(total_power, 0.0)
+    duration = float(time[-1] - time[0])
+    positive_energy = float(np.trapezoid(positive_power, time))
+    net_energy = float(np.trapezoid(total_power, time))
+    return {
+        "duration_s": duration,
+        "positive_energy_j": positive_energy,
+        "net_energy_j": net_energy,
+        "positive_mean_power_w": positive_energy / duration,
+        "negative_energy_j": positive_energy - net_energy,
+    }
+
+
+def summarize_pitch(group: pd.DataFrame) -> pd.Series:
+    fp = group["fp_poi_time"].dropna().unique()
+    mer = group["MER_time"].dropna().unique()
+    br = group["BR_time"].dropna().unique()
+    if len(fp) != 1 or len(mer) != 1 or len(br) != 1:
+        raise ValueError(f"Ambiguous event time for {group.name}")
+    fp_mer = integrate_window(group, float(fp[0]), float(mer[0]))
+    fp_br = integrate_window(group, float(fp[0]), float(br[0]))
+    result = {f"fp_mer_{key}": value for key, value in fp_mer.items()}
+    result.update({f"fp_br_{key}": value for key, value in fp_br.items()})
+    result["mer_share_of_fp_br"] = (
+        fp_mer["positive_energy_j"] / fp_br["positive_energy_j"]
     )
+    return pd.Series(result)
 
 
-def repeated_cv_r2(data: pd.DataFrame, outcome: str, predictors: list[str]) -> tuple[float, float]:
+def cv_r2(data: pd.DataFrame, outcome: str, predictors: list[str]) -> tuple[float, float]:
     clean = data[[outcome, *predictors]].dropna()
     cv = RepeatedKFold(n_splits=10, n_repeats=20, random_state=RANDOM_STATE)
     scores = cross_val_score(
@@ -46,25 +68,27 @@ def repeated_cv_r2(data: pd.DataFrame, outcome: str, predictors: list[str]) -> t
     return float(scores.mean()), float(scores.std(ddof=1))
 
 
-def compare_models(
-    athlete: pd.DataFrame, outcome: str, power: str, outcome_type: str
+def model_table(
+    athlete: pd.DataFrame,
+    label: str,
+    outcome: str,
+    duration: str,
+    power: str,
 ) -> pd.DataFrame:
     specifications = {
         "mass": ["session_mass_kg"],
-        "mass_duration": ["session_mass_kg", "fp_br_duration_s"],
+        "mass_duration": ["session_mass_kg", duration],
         "mass_power": ["session_mass_kg", power],
-        "mass_duration_power": ["session_mass_kg", "fp_br_duration_s", power],
+        "mass_duration_power": ["session_mass_kg", duration, power],
     }
     rows = []
     for name, predictors in specifications.items():
         clean = athlete[[outcome, *predictors]].dropna()
         fit = smf.ols(f"{outcome} ~ {' + '.join(predictors)}", data=clean).fit()
-        cv_mean, cv_sd = repeated_cv_r2(clean, outcome, predictors)
+        cv_mean, cv_sd = cv_r2(clean, outcome, predictors)
         rows.append(
             {
-                "outcome_type": outcome_type,
-                "outcome": outcome,
-                "power_predictor": power,
+                "analysis": label,
                 "model": name,
                 "n": len(clean),
                 "r2": fit.rsquared,
@@ -76,19 +100,23 @@ def compare_models(
     return pd.DataFrame(rows)
 
 
-def standardized_full_model(
-    athlete: pd.DataFrame, outcome: str, power: str, outcome_type: str
+def standardized_model(
+    athlete: pd.DataFrame,
+    label: str,
+    outcome: str,
+    duration: str,
+    power: str,
 ) -> pd.DataFrame:
-    columns = [outcome, "session_mass_kg", "fp_br_duration_s", power]
+    columns = [outcome, "session_mass_kg", duration, power]
     clean = athlete[columns].dropna()
     z = (clean - clean.mean()) / clean.std(ddof=0)
     fit = smf.ols(
-        f"{outcome} ~ session_mass_kg + fp_br_duration_s + {power}", data=z
+        f"{outcome} ~ session_mass_kg + {duration} + {power}", data=z
     ).fit()
-    terms = ["session_mass_kg", "fp_br_duration_s", power]
+    terms = ["session_mass_kg", duration, power]
     return pd.DataFrame(
         {
-            "outcome_type": outcome_type,
+            "analysis": label,
             "term": terms,
             "standardized_beta": fit.params[terms].to_numpy(),
             "p": fit.pvalues[terms].to_numpy(),
@@ -96,35 +124,30 @@ def standardized_full_model(
     )
 
 
-def mixed_official_total(per_pitch: pd.DataFrame) -> pd.DataFrame:
-    data = per_pitch.dropna(
-        subset=[
-            "official_total_j",
-            "session_mass_kg",
-            "fp_br_duration_s",
-            "total_mean_power_w",
-        ]
-    ).copy()
-    for variable in ["fp_br_duration_s", "total_mean_power_w"]:
+def mixed_model(
+    per_pitch: pd.DataFrame,
+    label: str,
+    outcome: str,
+    duration: str,
+    power: str,
+) -> pd.DataFrame:
+    data = per_pitch.dropna(subset=[outcome, "session_mass_kg", duration, power]).copy()
+    for variable in [duration, power]:
         data[f"{variable}_between"] = data.groupby("session")[variable].transform("mean")
         data[f"{variable}_within"] = data[variable] - data[f"{variable}_between"]
-    formula = (
-        "official_total_j ~ session_mass_kg + fp_br_duration_s_between + "
-        "fp_br_duration_s_within + total_mean_power_w_between + "
-        "total_mean_power_w_within"
-    )
-    fit = smf.mixedlm(formula, data=data, groups=data["session"]).fit(
-        reml=False, method="lbfgs"
-    )
     terms = [
         "session_mass_kg",
-        "fp_br_duration_s_between",
-        "fp_br_duration_s_within",
-        "total_mean_power_w_between",
-        "total_mean_power_w_within",
+        f"{duration}_between",
+        f"{duration}_within",
+        f"{power}_between",
+        f"{power}_within",
     ]
+    fit = smf.mixedlm(
+        f"{outcome} ~ {' + '.join(terms)}", data=data, groups=data["session"]
+    ).fit(reml=False, method="lbfgs")
     return pd.DataFrame(
         {
+            "analysis": label,
             "term": terms,
             "coefficient": fit.params[terms].to_numpy(),
             "standard_error": fit.bse[terms].to_numpy(),
@@ -142,24 +165,21 @@ def main() -> None:
             "session_pitch",
             "time",
             "fp_poi_time",
+            "MER_time",
             "BR_time",
             "shoulder_energy_transfer_stp",
             "shoulder_energy_transfer_jfp",
         ],
     ).dropna()
-    window = energy[
-        (energy["time"] >= energy["fp_poi_time"])
-        & (energy["time"] <= energy["BR_time"])
-    ].copy()
     per_pitch = (
-        window.groupby("session_pitch", sort=False)
+        energy.groupby("session_pitch", sort=False)
         .apply(summarize_pitch, include_groups=False)
         .reset_index()
     )
     poi = pd.read_csv(
         ROOT / "data" / "poi" / "poi_metrics.csv",
         usecols=["session_pitch", "shoulder_transfer_fp_br"],
-    ).rename(columns={"shoulder_transfer_fp_br": "official_total_j"})
+    ).rename(columns={"shoulder_transfer_fp_br": "official_fp_br_j"})
     metadata = pd.read_csv(
         ROOT / "data" / "metadata.csv",
         usecols=["session_pitch", "session", "session_mass_kg"],
@@ -174,62 +194,89 @@ def main() -> None:
     athlete = per_pitch.groupby("session", as_index=False).agg(
         session_mass_kg=("session_mass_kg", "first"),
         pitch_n=("session_pitch", "size"),
+        official_fp_br_j=("official_fp_br_j", "mean"),
+        fp_mer_duration_s=("fp_mer_duration_s", "mean"),
+        fp_mer_positive_energy_j=("fp_mer_positive_energy_j", "mean"),
+        fp_mer_duration_sum_s=("fp_mer_duration_s", "sum"),
+        fp_mer_energy_sum_j=("fp_mer_positive_energy_j", "sum"),
         fp_br_duration_s=("fp_br_duration_s", "mean"),
-        stp_j=("stp_j", "mean"),
-        jfp_j=("jfp_j", "mean"),
-        reconstructed_total_j=("reconstructed_total_j", "mean"),
-        official_total_j=("official_total_j", "mean"),
-        duration_sum_s=("fp_br_duration_s", "sum"),
-        stp_sum_j=("stp_j", "sum"),
-        jfp_sum_j=("jfp_j", "sum"),
-        reconstructed_total_sum_j=("reconstructed_total_j", "sum"),
+        fp_br_positive_energy_j=("fp_br_positive_energy_j", "mean"),
+        fp_br_net_energy_j=("fp_br_net_energy_j", "mean"),
+        fp_br_negative_energy_j=("fp_br_negative_energy_j", "mean"),
+        fp_br_duration_sum_s=("fp_br_duration_s", "sum"),
+        fp_br_energy_sum_j=("fp_br_positive_energy_j", "sum"),
+        mer_share_of_fp_br=("mer_share_of_fp_br", "mean"),
     )
-    athlete["stp_mean_power_w"] = athlete["stp_sum_j"] / athlete["duration_sum_s"]
-    athlete["jfp_mean_power_w"] = athlete["jfp_sum_j"] / athlete["duration_sum_s"]
-    athlete["total_mean_power_w"] = (
-        athlete["reconstructed_total_sum_j"] / athlete["duration_sum_s"]
+    for phase in ["fp_mer", "fp_br"]:
+        athlete[f"{phase}_positive_mean_power_w"] = (
+            athlete[f"{phase}_energy_sum_j"] / athlete[f"{phase}_duration_sum_s"]
+        )
+    athlete["fp_mer_above_both_means"] = (
+        (athlete["fp_mer_duration_s"] > athlete["fp_mer_duration_s"].mean())
+        & (
+            athlete["fp_mer_positive_mean_power_w"]
+            > athlete["fp_mer_positive_mean_power_w"].mean()
+        )
     )
-
-    identities = {
-        "stp": athlete["stp_j"] - athlete["fp_br_duration_s"] * athlete["stp_mean_power_w"],
-        "jfp": athlete["jfp_j"] - athlete["fp_br_duration_s"] * athlete["jfp_mean_power_w"],
-        "total": athlete["reconstructed_total_j"]
-        - athlete["fp_br_duration_s"] * athlete["total_mean_power_w"],
-    }
-    if max(error.abs().max() for error in identities.values()) > 1e-10:
-        raise ValueError("Energy-duration-power identity failed")
+    athlete["fp_mer_top_quartile_both"] = (
+        (
+            athlete["fp_mer_duration_s"]
+            >= athlete["fp_mer_duration_s"].quantile(0.75)
+        )
+        & (
+            athlete["fp_mer_positive_mean_power_w"]
+            >= athlete["fp_mer_positive_mean_power_w"].quantile(0.75)
+        )
+    )
 
     definitions = [
-        ("stp_j", "stp_mean_power_w", "full_fp_br_stp"),
-        ("jfp_j", "jfp_mean_power_w", "full_fp_br_jfp"),
-        ("reconstructed_total_j", "total_mean_power_w", "reconstructed_total"),
-        ("official_total_j", "total_mean_power_w", "official_total"),
+        (
+            "fp_mer_positive_transfer",
+            "fp_mer_positive_energy_j",
+            "fp_mer_duration_s",
+            "fp_mer_positive_mean_power_w",
+        ),
+        (
+            "fp_br_reconstructed_positive",
+            "fp_br_positive_energy_j",
+            "fp_br_duration_s",
+            "fp_br_positive_mean_power_w",
+        ),
+        (
+            "fp_br_official",
+            "official_fp_br_j",
+            "fp_br_duration_s",
+            "fp_br_positive_mean_power_w",
+        ),
     ]
     models = pd.concat(
-        [compare_models(athlete, outcome, power, label) for outcome, power, label in definitions],
+        [model_table(athlete, *definition) for definition in definitions],
         ignore_index=True,
     )
     coefficients = pd.concat(
-        [
-            standardized_full_model(athlete, outcome, power, label)
-            for outcome, power, label in definitions
-        ],
+        [standardized_model(athlete, *definition) for definition in definitions],
         ignore_index=True,
     )
-    mixed = mixed_official_total(per_pitch)
+    mixed = pd.concat(
+        [mixed_model(per_pitch, *definition) for definition in definitions],
+        ignore_index=True,
+    )
 
     validation = pd.DataFrame(
         {
             "level": ["pitch", "pitcher"],
             "n": [len(per_pitch), len(athlete)],
-            "official_reconstructed_r": [
-                per_pitch["official_total_j"].corr(per_pitch["reconstructed_total_j"]),
-                athlete["official_total_j"].corr(athlete["reconstructed_total_j"]),
+            "official_positive_r": [
+                per_pitch["official_fp_br_j"].corr(per_pitch["fp_br_positive_energy_j"]),
+                athlete["official_fp_br_j"].corr(athlete["fp_br_positive_energy_j"]),
             ],
-            "official_mean_j": [per_pitch["official_total_j"].mean(), athlete["official_total_j"].mean()],
-            "reconstructed_mean_j": [
-                per_pitch["reconstructed_total_j"].mean(),
-                athlete["reconstructed_total_j"].mean(),
+            "official_minus_positive_mean_j": [
+                (per_pitch["official_fp_br_j"] - per_pitch["fp_br_positive_energy_j"]).mean(),
+                (athlete["official_fp_br_j"] - athlete["fp_br_positive_energy_j"]).mean(),
+            ],
+            "mae_j": [
+                (per_pitch["official_fp_br_j"] - per_pitch["fp_br_positive_energy_j"]).abs().mean(),
+                (athlete["official_fp_br_j"] - athlete["fp_br_positive_energy_j"]).abs().mean(),
             ],
         }
     )
@@ -239,24 +286,40 @@ def main() -> None:
     athlete.to_csv(OUTPUT_DIR / "per_pitcher.csv", index=False)
     models.to_csv(OUTPUT_DIR / "model_comparison.csv", index=False)
     coefficients.to_csv(OUTPUT_DIR / "standardized_coefficients.csv", index=False)
-    mixed.to_csv(OUTPUT_DIR / "official_total_within_between_mixed_model.csv", index=False)
+    mixed.to_csv(OUTPUT_DIR / "within_between_mixed_models.csv", index=False)
     validation.to_csv(OUTPUT_DIR / "official_reconstruction_validation.csv", index=False)
 
     print(f"coverage: pitches={len(per_pitch)}, pitchers={len(athlete)}")
-    print("\nOfficial versus reconstructed total")
+    print("\nOfficial FP-BR validation")
     print(validation.to_string(index=False, float_format=lambda x: f"{x:.4f}"))
-    print("\nPitcher means")
+    print("\nPhase summary (pitcher means)")
+    summary_columns = [
+        "fp_mer_duration_s",
+        "fp_mer_positive_energy_j",
+        "fp_mer_positive_mean_power_w",
+        "fp_br_duration_s",
+        "fp_br_positive_energy_j",
+        "fp_br_negative_energy_j",
+        "mer_share_of_fp_br",
+    ]
+    print(athlete[summary_columns].mean().to_string(float_format=lambda x: f"{x:.4f}"))
+    print("\nCorrelations")
+    correlation_columns = [
+        "session_mass_kg",
+        "fp_mer_duration_s",
+        "fp_mer_positive_mean_power_w",
+        "fp_mer_positive_energy_j",
+    ]
+    print(athlete[correlation_columns].corr().to_string(float_format=lambda x: f"{x:.4f}"))
     print(
-        athlete[["fp_br_duration_s", "stp_j", "jfp_j", "reconstructed_total_j", "official_total_j"]]
-        .mean()
-        .to_string(float_format=lambda x: f"{x:.4f}")
+        "\nJoint-high pitchers: "
+        f"above both means={int(athlete['fp_mer_above_both_means'].sum())}; "
+        f"top quartile on both={int(athlete['fp_mer_top_quartile_both'].sum())}"
     )
     print("\nModel comparison")
     print(models.to_string(index=False, float_format=lambda x: f"{x:.4f}"))
-    print("\nStandardized full models")
+    print("\nStandardized models")
     print(coefficients.to_string(index=False, float_format=lambda x: f"{x:.4f}"))
-    print("\nOfficial total pitch-level within/between model")
-    print(mixed.to_string(index=False, float_format=lambda x: f"{x:.6f}"))
 
 
 if __name__ == "__main__":
