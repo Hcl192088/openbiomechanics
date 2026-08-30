@@ -312,6 +312,23 @@ transfer magnitude = min(abs(thorax_stp), abs(upper_arm_stp))
 
 MER前上臂限制期間，投手平均只有45.6%的時間點仍在增加軀幹角速度大小（原始微分45.6%，結果不受平滑影響）；以STP功率加權後，只有36.1%的上臂限制STP發生在軀幹加速時間。故資料不支持「上臂限制期主要就是軀幹加速期」。但同期間軀幹整體net segment power為正的時間占68.0%，STP加權占64.9%；平均肩部軀幹側STP為-1586 W、上臂側為+1284 W，而軀幹net segment power仍為+752 W。這直接支持較窄的敘述：肩部可一邊從軀幹抽出功率送往上臂，軀幹同時仍從骨盆端與其他來源得到更多淨功率；然而這不保證軀幹角速度當下仍增加，因軀幹net segment power也包含平移能及多端能量流。
 
+#### 上臂側STP三軸分解可行性
+
+官方上臂側三軸功率需要 `RAR::ProxEndTorque * RAR::AngVel`；CMO已另計算 `RT_SHOULDER_GLOBAL_ANGULAR_VELOCITY`（RAR相對Virtual Lab、解析在RAR），但此三軸訊號未匯入 `joint_velos.csv`。現有 `shoulder_velo_xyz` 是RAR相對RTA的關節角速度，不能直接替代絕對上臂角速度。
+
+嘗試以processed `shoulder_angle_xyz`、Visual3D Z–Y–Z序列、所有軸排列／正負號及各軸±90°位移重建RTA→RAR旋轉，再將軀幹角速度轉入RAR並加上相對肩速度。最佳候選在全部21,205個FP–BR幀中，兩套肩力矩向量只達r=0.727、MAE 63.0 N·m；上臂總STP重建僅r=0.468、MAE 684 W，未達可解讀門檻。因此本輪x/y/z功率結果作廢，不能據此宣稱上臂應朝投球方向、外轉方向或其他單一方向加速。
+
+若重新匯出官方全域上臂角速度，正式分解才是：
+
+```text
+P_arm_x = shoulder_upper_arm_moment_x * radians(RT_SHOULDER_GLOBAL_ANGULAR_VELOCITY_x)
+P_arm_y = shoulder_upper_arm_moment_y * radians(RT_SHOULDER_GLOBAL_ANGULAR_VELOCITY_y)
+P_arm_z = shoulder_upper_arm_moment_z * radians(RT_SHOULDER_GLOBAL_ANGULAR_VELOCITY_z)
+P_arm_STP = P_arm_x + P_arm_y + P_arm_z
+```
+
+匯出後必須先驗證三軸和與 `upper_arm_prox_seg_pwr - JFP` 逐幀一致，再進行教練語言轉譯。
+
 ### 總下降量與STP功率的SPM時序
 
 以100位投手為獨立分析單位，每球FP至BR正規化101點後先在投手內平均。預測量為投手平均 `omega_peak^2 - omega_BR^2`，結果曲線為正向STP transfer power，SPM GLM同時控制體重。總STP沒有顯著cluster；拆開限制端後，只有上臂限制功率在FP–BR 52.74–63.87%出現顯著正相關cluster（cluster p = 0.000047，區間平均partial r = 0.354，峰值partial r = 0.378，位於57%）。即使對總STP、上臂限制、軀幹限制三個SPM檢定作Bonferroni校正，該cluster仍成立（adjusted p約0.00014）。軀幹限制功率沒有顯著cluster。
@@ -434,6 +451,7 @@ P_shoulder_transfer_csv = STP_csv + JFP_csv
 - 最後持續限制端交接：`baseball_pitching/code/py/analyze_stp_final_bottleneck_transition.py`
 - 累積限制端時序圖：`baseball_pitching/code/py/plot_stp_bottleneck_cumulative_timeline.py`
 - 上臂限制與軀幹加速驗證：`baseball_pitching/code/py/validate_arm_limited_during_trunk_acceleration.py`
+- 上臂側STP三軸可行性驗證：`baseball_pitching/code/py/analyze_upper_arm_stp_axis_components.py`
 - 慣量與逐人LOOCV誤差：`baseball_pitching/data/poi/thorax_inertia_estimates.csv`
 - 資料：`baseball_pitching/data/full_sig/energy_flow.csv`
 - 公式來源：官方 `baseball_pitching/code/v3d/CMO.v3s` 中，segment power 定義為 JFP 與 STP 相加。
