@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import spm1d
+from scipy import stats
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -35,11 +36,12 @@ def extract_matrix(velos: pd.DataFrame, speeds: pd.DataFrame) -> pd.DataFrame:
         session_pitch = str(session_pitch)
         if session_pitch not in speed_map:
             raise ValueError(f"{session_pitch}: missing pitch speed")
-        ordered = group[["time", "pkh_time", "fp_poi_time", VALUE_COL]].dropna().sort_values("time")
+        ordered = group[["time", "pkh_time", "fp_poi_time", "BR_time", VALUE_COL]].dropna().sort_values("time")
         pkh = unique_value(ordered, "pkh_time", session_pitch)
         fp = unique_value(ordered, "fp_poi_time", session_pitch)
-        if not pkh < fp:
-            raise ValueError(f"{session_pitch}: expected pkh_time < fp_poi_time")
+        br = unique_value(ordered, "BR_time", session_pitch)
+        if not pkh < fp < br:
+            raise ValueError(f"{session_pitch}: expected pkh_time < fp_poi_time < BR_time")
         pkh_idx = int((ordered["time"] - pkh).abs().idxmin())
         pkh_position = int(ordered.index.get_loc(pkh_idx))
         values = ordered[VALUE_COL].to_numpy(dtype=float)
@@ -51,6 +53,12 @@ def extract_matrix(velos: pd.DataFrame, speeds: pd.DataFrame) -> pd.DataFrame:
             "pitcher": session_pitch.split("_")[0],
             SPEED_COL: float(speed_map[session_pitch]),
             "fp_frame_from_pkh": (fp - pkh) * SAMPLE_RATE_HZ,
+            "peak_velocity_pkh_fp": float(
+                ordered.loc[(ordered["time"] >= pkh) & (ordered["time"] <= fp), VALUE_COL].max()
+            ),
+            "peak_velocity_pkh_br": float(
+                ordered.loc[(ordered["time"] >= pkh) & (ordered["time"] <= br), VALUE_COL].max()
+            ),
         }
         row.update({f"frame_{frame}": value for frame, value in enumerate(window)})
         rows.append(row)
@@ -103,7 +111,7 @@ def analyze_mode(data: pd.DataFrame, mode: str) -> tuple[dict[str, float | int |
 
     IMG_DIR.mkdir(parents=True, exist_ok=True)
     figure_path = IMG_DIR / f"pelvis_velocity_spm_pkh_{mode}.png"
-    fig, axes = plt.subplots(1, 2, figsize=(12, 4.5), dpi=200)
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.5), dpi=200)
     axes[0].plot(x_seconds, high_mean, color="red", linewidth=2, label="High speed")
     axes[0].fill_between(x_seconds, high_mean - high_sem, high_mean + high_sem, color="red", alpha=0.2)
     axes[0].plot(x_seconds, low_mean, color="black", linewidth=2, label="Low speed")
@@ -123,6 +131,22 @@ def analyze_mode(data: pd.DataFrame, mode: str) -> tuple[dict[str, float | int |
     tick_frames = np.arange(0, END_FRAME + 1, 40)
     axes[1].set_xticks(tick_frames, [f"{frame / SAMPLE_RATE_HZ:.2f}" for frame in tick_frames])
     axes[1].set_title("SPM{t} high - low", fontsize=10)
+
+    high_peak = data.loc[high_mask, "peak_velocity_pkh_fp"]
+    low_peak = data.loc[low_mask, "peak_velocity_pkh_fp"]
+    peak_test = stats.ttest_ind(high_peak, low_peak, equal_var=False)
+    axes[2].boxplot(
+        [high_peak, low_peak],
+        tick_labels=["High", "Low"],
+        showfliers=False,
+        patch_artist=True,
+        boxprops={"facecolor": "0.9"},
+    )
+    axes[2].scatter(1, high_peak.mean(), color="red", marker="D", zorder=3, label="Group mean")
+    axes[2].scatter(2, low_peak.mean(), color="black", marker="D", zorder=3)
+    axes[2].set_ylabel("Each pitch peak velocity, PKH-FP (deg/s)")
+    axes[2].set_title(f"Individual peaks: p = {peak_test.pvalue:.3f}", fontsize=10)
+    axes[2].legend(fontsize=7, loc="upper right")
     fig.tight_layout()
     fig.savefig(figure_path)
     plt.close(fig)
@@ -164,6 +188,11 @@ def analyze_mode(data: pd.DataFrame, mode: str) -> tuple[dict[str, float | int |
         "zstar": float(inference.zstar),
         "n_clusters": int(len(inference.clusters)),
         "min_cluster_p": min((float(c.P) for c in inference.clusters), default=np.nan),
+        "high_individual_peak_pkh_fp_mean": float(high_peak.mean()),
+        "low_individual_peak_pkh_fp_mean": float(low_peak.mean()),
+        "individual_peak_pkh_fp_welch_p": float(peak_test.pvalue),
+        "high_group_mean_curve_peak": float(high_mean.max()),
+        "low_group_mean_curve_peak": float(low_mean.max()),
         "figure": str(figure_path.relative_to(ROOT)),
     }
     return summary, cluster_rows
@@ -218,7 +247,7 @@ def pitcher_level_sensitivity(matrix: pd.DataFrame) -> tuple[pd.DataFrame, pd.Da
 def main() -> None:
     velos = pd.read_csv(
         VELO_PATH,
-        usecols=["session_pitch", "time", "pkh_time", "fp_poi_time", VALUE_COL],
+        usecols=["session_pitch", "time", "pkh_time", "fp_poi_time", "BR_time", VALUE_COL],
     )
     speeds = pd.read_csv(POI_PATH, usecols=["session_pitch", SPEED_COL]).dropna().drop_duplicates("session_pitch")
     matrix = extract_matrix(velos, speeds)
