@@ -42,6 +42,17 @@ relative_power = sum(shoulder_upper_arm_moment_axis * radians(shoulder_velo_axis
 - 腳本：`baseball_pitching/code/py/analyze_upper_arm_stp_axis_components.py`
 - 輸出：`baseball_pitching/code/py/upper_arm_stp_axis_outputs/power_validation.csv`
 
+### 相對上臂角速度加絕對軀幹角速度
+
+理論關係成立，但現有發布欄位尚不能可靠重建全部投手：`上臂絕對角速度 = 上臂相對胸廓角速度 + 旋轉至上臂座標系的胸廓絕對角速度`。本次使用同一肩力與肩力矩在胸廓／上臂座標系的雙重投影，逐幀解出兩座標系間的旋轉，不使用肩關節Euler角。
+
+於 `fp_poi_time` 至BR，411球、21,205幀的重建STP與官方上臂端STP為r=0.555、MAE=498.29 W。分側後，右投328球為r=0.832、MAE=283.33 W；左投83球為r=-0.067、MAE=1,355.61 W。右投結果支持向量加法方向正確，但誤差仍不足以作三軸正式結論；左投則顯示發布欄位的左右鏡像／符號處理尚未對齊。不得以全體結果拆解上臂端STP。
+
+- 日期：2026-09-05
+- 窗口：`fp_poi_time` 至 `BR_time`
+- 腳本：`baseball_pitching/code/py/validate_arm_absolute_velocity_vector_sum.py`
+- 輸出：`baseball_pitching/code/py/arm_absolute_velocity_vector_sum_outputs/validation_summary.csv`
+
 ### 軀幹側STP的三軸分量
 
 直接以 `-shoulder_thorax_moment_axis * radians(torso_velo_axis)` 重建軀幹側肩部STP。三軸加總與上述 `thorax_stp` 高度對齊（r = 0.99486，MAE = 12.22 W），確認反作用力矩的負號與功率分解方向。
