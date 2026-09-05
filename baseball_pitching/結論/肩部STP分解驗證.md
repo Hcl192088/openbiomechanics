@@ -27,6 +27,21 @@ thorax_stp   = thorax_dist_seg_pwr + shoulder_energy_transfer_jfp
 upper_arm_stp = upper_arm_prox_seg_pwr - shoulder_energy_transfer_jfp
 ```
 
+### 相對肩角速度不能重建上臂端STP
+
+不支持以已發布的 `shoulder_velo_x/y/z` 直接替代上臂絕對角速度。將上臂座標系肩力矩與相對肩角速度相乘後三軸加總：
+
+```text
+relative_power = sum(shoulder_upper_arm_moment_axis * radians(shoulder_velo_axis))
+```
+
+於 `fp_poi_time` 至BR的411球、21,205個完整時間點，`relative_power` 與官方上臂端STP的逐幀相關僅r=0.073，MAE=1,513.66 W，RMSE=1,880.59 W；反轉整體符號後r=-0.073，也無法解釋。逐球積分後相關仍只有r=0.266，平均絕對能量差203.57 J；官方上臂端STP平均積分194.82 J，而相對速度算法為-8.75 J。因此官方上臂端STP不是由已發布的相對肩角速度直接計算。
+
+- 日期：2026-09-05
+- 窗口：`fp_poi_time` 至 `BR_time`
+- 腳本：`baseball_pitching/code/py/analyze_upper_arm_stp_axis_components.py`
+- 輸出：`baseball_pitching/code/py/upper_arm_stp_axis_outputs/power_validation.csv`
+
 ### 軀幹側STP的三軸分量
 
 直接以 `-shoulder_thorax_moment_axis * radians(torso_velo_axis)` 重建軀幹側肩部STP。三軸加總與上述 `thorax_stp` 高度對齊（r = 0.99486，MAE = 12.22 W），確認反作用力矩的負號與功率分解方向。
