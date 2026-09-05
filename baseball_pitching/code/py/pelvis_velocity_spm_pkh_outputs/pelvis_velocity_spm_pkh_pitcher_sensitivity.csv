@@ -1,0 +1,4 @@
+﻿mode,comparison,n_high_pitchers,n_low_pitchers,n_clusters,min_cluster_p
+90mph,>90 mph vs <=90 mph,13,87,0,
+quartile,top quartile >= 87.9 vs bottom <= 81.9 mph,25,25,0,
+p55_p45,>=55th pct 85.8 vs <=45th pct 84.9 mph,45,45,0,
