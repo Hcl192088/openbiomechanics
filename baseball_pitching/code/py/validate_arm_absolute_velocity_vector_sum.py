@@ -24,11 +24,12 @@ def basis(force: np.ndarray, moment: np.ndarray) -> np.ndarray:
     return np.column_stack((e1, e2, e3))
 
 
-def metrics(group: pd.DataFrame, label: str) -> dict:
+def metrics(group: pd.DataFrame, label: str, candidate: str) -> dict:
     official = group["official_arm_stp_w"].to_numpy(float)
     predicted = group["reconstructed_arm_stp_w"].to_numpy(float)
     error = official - predicted
     return {
+        "candidate": candidate,
         "group": label,
         "frames": len(group),
         "pitches": group.session_pitch.nunique(),
@@ -86,15 +87,33 @@ def main() -> None:
 
     torso = np.radians(data[[f"torso_velo_{a}" for a in "xyz"]].to_numpy(float))
     relative = np.radians(data[[f"shoulder_velo_{a}" for a in "xyz"]].to_numpy(float))
-    arm_absolute = relative + np.einsum("nij,nj->ni", rotations, torso)
     arm_moment = data[[f"shoulder_upper_arm_moment_{a}" for a in "xyz"]].to_numpy(float)
-    data["reconstructed_arm_stp_w"] = np.sum(arm_moment * arm_absolute, axis=1)
     data["official_arm_stp_w"] = (
         data.upper_arm_prox_seg_pwr - data.shoulder_energy_transfer_jfp
     )
 
-    summary = [metrics(data, "all")]
-    summary.extend(metrics(group, hand) for hand, group in data.groupby("p_throws"))
+    # CMO documents X/Z negation for left shoulder kinetics, but the private
+    # export path that produced the public CSVs is unavailable. Test only the
+    # four placements implied by I or the documented S=diag(-1,+1,-1); do not
+    # search arbitrary axis signs or fit them to the target power.
+    identity = np.ones_like(relative)
+    left_xz = np.where(
+        (data.p_throws == "L").to_numpy()[:, None],
+        np.array([-1.0, 1.0, -1.0]),
+        np.array([1.0, 1.0, 1.0]),
+    )
+    summary = []
+    for relative_name, relative_sign in (("I", identity), ("S", left_xz)):
+        for torso_name, torso_sign in (("I", identity), ("S", left_xz)):
+            candidate = f"relative_{relative_name}__torso_{torso_name}"
+            arm_absolute = relative * relative_sign + np.einsum(
+                "nij,nj->ni", rotations, torso * torso_sign
+            )
+            data["reconstructed_arm_stp_w"] = np.sum(arm_moment * arm_absolute, axis=1)
+            summary.append(metrics(data, "all", candidate))
+            summary.extend(
+                metrics(group, hand, candidate) for hand, group in data.groupby("p_throws")
+            )
     summary = pd.DataFrame(summary)
     OUT.mkdir(exist_ok=True)
     summary.to_csv(OUT / "validation_summary.csv", index=False)
