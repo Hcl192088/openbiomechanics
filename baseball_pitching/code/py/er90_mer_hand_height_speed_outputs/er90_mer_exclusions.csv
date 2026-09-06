@@ -1,0 +1,8 @@
+﻿session_pitch,user,reason,ascending_crossing_count,pitch_speed_mph
+1603_1,884,expected exactly one ascending shoulder_angle_z=90 crossing,0,85.0
+1603_2,884,expected exactly one ascending shoulder_angle_z=90 crossing,0,85.6
+1603_3,884,expected exactly one ascending shoulder_angle_z=90 crossing,0,85.1
+2742_5,581,expected exactly one ascending shoulder_angle_z=90 crossing,0,87.1
+2761_5,1558,expected exactly one ascending shoulder_angle_z=90 crossing,0,79.4
+2882_5,1630,expected exactly one ascending shoulder_angle_z=90 crossing,0,83.4
+2993_1,1667,expected exactly one ascending shoulder_angle_z=90 crossing,0,91.3

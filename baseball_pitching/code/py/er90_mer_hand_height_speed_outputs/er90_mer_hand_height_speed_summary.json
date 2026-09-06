@@ -1,0 +1,92 @@
+{
+  "definition": {
+    "ER90": "unique ascending crossing of shoulder_angle_z=90 degrees between fp_poi_time and MER_time",
+    "MER": "full-signal MER_time; validated against poi_metrics.max_shoulder_external_rotation",
+    "height": "hand_jc_z, the throwing-hand landmark/joint-center vertical position; positive global z is upward",
+    "maximum_drop": "max over ER90<=s<=t<=MER of hand_jc_z(s)-hand_jc_z(t); not the ER90-to-MER endpoint difference",
+    "speed": "metadata.pitch_speed_mph, exact-match validated against poi_metrics.pitch_speed_mph"
+  },
+  "data": {
+    "source_pitch_count": 411,
+    "valid_pitch_count": 404,
+    "excluded_pitch_count": 7,
+    "pitcher_count_valid": 99,
+    "excluded_reasons": {
+      "expected exactly one ascending shoulder_angle_z=90 crossing": 7
+    }
+  },
+  "maximum_drop": {
+    "mean_cm": 8.32818715800829,
+    "sd_cm": 5.631671004654944,
+    "median_cm": 7.754718431303531,
+    "q25_cm": 3.376594041211356,
+    "q75_cm": 11.922531297956507,
+    "min_cm": 0.0,
+    "max_cm": 29.647702330004734,
+    "percent_positive_drop": 97.52475247524752,
+    "mean_pct_body_height": 4.500409273236388
+  },
+  "raw_pitch_level": {
+    "linear": {
+      "n": 404,
+      "slope": 0.12799281136790264,
+      "intercept": 83.62786379323657,
+      "r": 0.15214957481188507,
+      "r2": 0.02314949311543741,
+      "p": 0.002165334699385653
+    },
+    "spearman": {
+      "n": 404,
+      "rho": 0.16390472893071817,
+      "p": 0.000944269887903829
+    }
+  },
+  "pitcher_clustered": {
+    "ols": {
+      "n": 404,
+      "n_groups": 99,
+      "slope": 0.12799281136790064,
+      "se": 0.08514754752619556,
+      "p": 0.13279045090638614,
+      "ci_low": -0.03889331515535524,
+      "ci_high": 0.2948789378911565
+    },
+    "bootstrap": {
+      "n_groups": 99,
+      "n_bootstrap": 5000,
+      "slope_ci_low": -0.0358616915448132,
+      "slope_ci_high": 0.2987804251357725,
+      "r_ci_low": -0.04206037316253782,
+      "r_ci_high": 0.34157262244917314
+    }
+  },
+  "within_pitcher_centered": {
+    "linear": {
+      "n": 404,
+      "slope": 0.1168889045952612,
+      "intercept": -1.771617935367067e-16,
+      "r": 0.20558981125810252,
+      "r2": 0.04226717049314222,
+      "p": 3.126305770902736e-05
+    },
+    "clustered_ols": {
+      "n": 404,
+      "n_groups": 99,
+      "slope": 0.1168889045952613,
+      "se": 0.036036896838794644,
+      "p": 0.001180336709167979,
+      "ci_low": 0.04625788467663847,
+      "ci_high": 0.18751992451388413
+    }
+  },
+  "pitcher_mean_level": {
+    "linear": {
+      "n": 99,
+      "slope": 0.12804085266466222,
+      "intercept": 83.6675425658377,
+      "r": 0.15432565171065638,
+      "r2": 0.023816406775918817,
+      "p": 0.1272162076809711
+    }
+  }
+}
