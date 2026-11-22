@@ -1,0 +1,11 @@
+,value
+frame_r_landmark_only_median,0.9771173096839353
+frame_r_lopo_median,0.9952980331102517
+frame_r_lopo_p05,0.971914095366756
+pitch_r_integrated_lopo,0.9818267821240944
+athlete_r_integrated_lopo,0.9930537139790979
+athlete_mae_integrated_lopo_j,4.393431634084799
+athlete_sd_official_jfp_j,40.09227705940697
+frame_r_cos_derived_vs_rotated,0.9758219479115161
+share_abs_cos_derived_le_1_05,0.9974842767295597
+session_offset_deg_median,38.861044484529344
