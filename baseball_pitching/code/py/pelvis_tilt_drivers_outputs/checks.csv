@@ -1,0 +1,18 @@
+,value
+rows,20781
+pitches,403
+lead_R_signs,"(-1, -1, -1)"
+lead_R_jfp_sign,1
+lead_R_r,0.9959626946563848
+lead_L_signs,"(-1, -1, 1)"
+lead_L_jfp_sign,1
+lead_L_r,0.9962704605592804
+rear_R_signs,"(-1, 1, -1)"
+rear_R_jfp_sign,1
+rear_R_r,0.9984221614107719
+rear_L_signs,"(-1, 1, 1)"
+rear_L_jfp_sign,1
+rear_L_r,0.9983874102516449
+share_frames_tilting,0.9556806698426448
+share_tilting_frames_L,0.938367442954599
+share_tilting_frames_R,0.9601330913490623
