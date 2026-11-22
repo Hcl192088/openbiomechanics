@@ -7,8 +7,9 @@ Window: start = fp_poi_time, end = BR_time; frames gated by (STP + JFP) > 0.
 Pelvis frame: R_pel = intrinsic ZYX Cardan of (pelvis_angle_z, _y, _x), as defined in
 code/v3d/CMO.v3s (PELVIS_ANGLE: RPV vs Virtual Lab, AXIS1=Z, AXIS3=X). Validated per
 pitch: pelvis x-axis vs hip-to-hip landmark vector |median cos| >= 0.99. For 83 pitches
-(22 sessions) the angles match only after mirroring about lab y (R -> M R M, M = diag(1,-1,1));
-exactly one of raw/mirrored must pass per pitch (flag `pelvis_angles_mirrored`). Sign may differ
+(22 sessions, all p_throws = L) the angles match only after mirroring about lab y (R -> M R M,
+M = diag(1,-1,1)): left-handers' angles are mirrored to right-handed convention, landmarks are not.
+Mirroring is chosen from POI p_throws; the landmark check must agree (else stop). Sign may differ
 by handedness; recorded, not used).
 
 Line r = thorax_dist - pelvis_center (hip midpoint), r_p = R_pel^T r.
@@ -52,7 +53,7 @@ def axis_parts(omega_local: np.ndarray, axes: np.ndarray, r: np.ndarray, names: 
     return {name: np.cross(omega_local[:, [i]] * axes[:, :, i], r) for i, name in enumerate(names)}
 
 
-def pitch_metrics(g: pd.DataFrame, q: np.ndarray) -> dict:
+def pitch_metrics(g: pd.DataFrame, q: np.ndarray, throws: str) -> dict:
     g = g.sort_values("time")
     t = g["time"].to_numpy(float)
     pt = lambda name: g[[f"{name}_{a}" for a in "xyz"]].to_numpy(float)
@@ -69,7 +70,12 @@ def pitch_metrics(g: pd.DataFrame, q: np.ndarray) -> dict:
     if ok_raw == ok_mir:
         raise ValueError(f"{g['session_pitch'].iloc[0]}: pelvis frame ambiguous or unmatched "
                          f"(raw cos {cos_raw:.3f}, mirrored cos {cos_mir:.3f})")
-    R, hip_cos, mirrored = (R_raw, cos_raw, False) if ok_raw else (R_mirror, cos_mir, True)
+    if throws not in ("L", "R"):
+        raise ValueError(f"{g['session_pitch'].iloc[0]}: unexpected p_throws {throws!r}")
+    if (throws == "L") != ok_mir:
+        raise ValueError(f"{g['session_pitch'].iloc[0]}: p_throws={throws} disagrees with landmark check "
+                         f"(raw cos {cos_raw:.3f}, mirrored cos {cos_mir:.3f})")
+    R, hip_cos, mirrored = (R_mirror, cos_mir, True) if throws == "L" else (R_raw, cos_raw, False)
     if np.interp(fp, t, grad(pt("centerofmass"), t)[:, 0]) <= 0:
         raise ValueError(f"{g['session_pitch'].iloc[0]}: COM x-velocity at FP <= 0; +x is not forward")
 
@@ -151,7 +157,9 @@ def main() -> None:
     if len(data) != len(energy):
         raise ValueError("Exact time-key merge lost rows; no fallback permitted")
     meta = pd.read_csv(ROOT / "data/metadata.csv", usecols=["session_pitch", "session", "session_mass_kg"])
-    poi = pd.read_csv(ROOT / "data/poi/poi_metrics.csv", usecols=["session_pitch", "pitch_speed_mph"])
+    poi = pd.read_csv(ROOT / "data/poi/poi_metrics.csv", usecols=["session_pitch", "pitch_speed_mph", "p_throws"])
+    throws_of = poi.set_index("session_pitch")["p_throws"].to_dict()
+    poi = poi.drop(columns="p_throws")
     session_of = meta.set_index("session_pitch")["session"].to_dict()
 
     groups = dict(tuple(data.groupby("session_pitch", sort=False)))
@@ -162,7 +170,7 @@ def main() -> None:
     for session, sps in sessions.items():
         q = fit_offset([prepare(groups[sp]) for sp in sps])
         for sp in sps:
-            row = pitch_metrics(groups[sp], q)
+            row = pitch_metrics(groups[sp], q, throws_of[sp])
             row.update({"session_pitch": sp, "session": session})
             rows.append(row)
     pitch = pd.DataFrame(rows).merge(meta[["session_pitch", "session_mass_kg"]], on="session_pitch").merge(
