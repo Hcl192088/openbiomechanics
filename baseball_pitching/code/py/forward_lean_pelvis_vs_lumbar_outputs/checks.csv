@@ -1,0 +1,11 @@
+,value
+pitches_pelvis_angles_mirrored,83.0
+pitches_hip_axis_cos_positive,411.0
+pitches_hip_axis_cos_negative,0.0
+min_abs_hip_axis_cos,0.9999905945541788
+max_rel_split_error_m_s,2.6645352591003757e-15
+athlete_mean_lead_femur_sag_change_deg,-4.017907394314737
+athlete_mean_lead_hip_angle_x_change_deg,-23.669516833333336
+athlete_mean_pelvis_angle_x_change_deg,26.338302266666666
+athlete_r_pelvis_tilt_change_vs_lead_hip_x_change,-0.6584877626412323
+athlete_r_jfp_pelvis_tilt_vs_lead_hip_x_change,-0.4237416660997626
