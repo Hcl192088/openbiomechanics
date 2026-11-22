@@ -1,0 +1,3 @@
+exposure,n_athletes,slope_mph_per_sd_6ft_and_over,interaction_mph_per_sd_under_6ft_extra,interaction_ci_low,interaction_ci_high,interaction_p_hc3
+separation_at_fp_poi,100,1.11642271431678,0.5579719955743752,-1.6030820217539548,2.719026012902705,0.6128203704337831
+maximum_separation,100,0.7008227844198789,1.2195494005083791,-0.8660864928956364,3.3051852939123947,0.2517685354183997
