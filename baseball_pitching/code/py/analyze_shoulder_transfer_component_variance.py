@@ -121,7 +121,7 @@ def main() -> None:
     for c in ["omega_peak", "omega_br", "session_mass_kg"]:
         z[c] = (z[c] - z[c].mean()) / z[c].std()
     model_rows = []
-    for y in ["stp_thorax_limited", "positive_total_j", "thorax_limited_duration_s", "omega_thorax_limited"]:
+    for y in [*COMPONENTS, "positive_total_j", "thorax_limited_duration_s", "omega_thorax_limited"]:
         fit = smf.ols(f"{y} ~ omega_peak + omega_br + session_mass_kg", z).fit(cov_type="HC3")
         for term in ["omega_peak", "omega_br", "session_mass_kg"]:
             model_rows.append({"outcome": y, "term": term,
