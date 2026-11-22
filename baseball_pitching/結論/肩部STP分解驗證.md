@@ -495,6 +495,15 @@ P_shoulder_transfer_csv = STP_csv + JFP_csv
 
 411球FP至MER共16,425幀的驗證結果：`JFP_csv`對官方JFP為r=0.9975、MAE 42.72 W；`STP_csv`對官方STP為r=0.9942、MAE 42.55 W；兩者誤差在總功率中幾乎互相抵銷，`STP_csv+JFP_csv`對官方 `STP+JFP` 為r=0.999994、MAE 0.167 W。若目的只是重建總肩部轉移，這套CSV公式已對齊；若要把JFP再拆成力大小、肩中心速度與夾角，仍需另行匯出與Visual3D相同的 `RAR::ProxEndForce` 和 `RAR::ProxEndVel` 向量，現有有限差分速度不可取代。
 
+#### 不需座標系的 JFP 拆解可行性（2026-11-22）
+
+**部分支持**：用與座標系無關的 `|F|`（肩力向量長度）與 `|v|`（`shoulder_jc` 有限差分速度長度），以官方 JFP 反推夾角 `cos = JFP / (|F||v|)`。FP→BR 正向轉移的 18,285 個時間點中，99.75% 的 `|cos| <= 1.05`（98.6% `<= 1.00`），中位 0.64、第 99 百分位 1.01；上緣貼近 1 表示 `|v|` 的尺度沒有明顯高估或低估，這個拆法在物理上可用。
+
+但事先設定的另外兩個交叉檢查未過：反推夾角與 landmark 旋轉力向量算出的夾角逐幀 r = 0.87（門檻 0.90）；旋轉法積分 JFP 與官方值在投手層級只有 r = 0.75（門檻 0.95，MAE 17.9 J，投手間 SD 40.1 J）。所以旋轉重建不能用於投手間比較；反推夾角的方向資訊只有間接驗證。
+
+- 腳本：`baseball_pitching/code/py/validate_jfp_force_speed_alignment_split.py`
+- 輸出：`baseball_pitching/code/py/jfp_force_speed_alignment_outputs/validation_summary.csv`
+
 ## 重現
 
 - 日期：2026-07-29

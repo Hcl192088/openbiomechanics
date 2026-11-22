@@ -1,0 +1,17 @@
+,value
+gated_frames,18285
+frames_with_valid_cos,18285
+A_share_abs_cos_derived_le_1_05,0.9974842767295597
+share_abs_cos_derived_le_1_00,0.9855619360131255
+cos_derived_p01,-0.28740512121170864
+cos_derived_median,0.644634230777437
+cos_derived_p99,1.0145074307068433
+B_frame_r_cos_derived_vs_rotated,0.8737847174084276
+frame_r_jfp_rotated_vs_official,0.9316342107274659
+pitch_r_integrated_jfp,0.7914175338118591
+C_athlete_r_integrated_jfp,0.7507388442534566
+athlete_mae_integrated_jfp_j,17.889088619624886
+athlete_sd_official_jfp_j,40.09227705940697
+A_pass,True
+B_pass,False
+C_pass,False
