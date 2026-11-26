@@ -47,10 +47,55 @@ def clusters(mask):
     return out
 
 
+def lateral_checks(df, A, B, y, idx):
+    """(1) Non-linear lateral offset: quadratic term (body-adjusted) and extreme-group contrasts on athlete
+    means (most glove-side 20 % and most arm-side 20 % vs the middle 60 %, body-adjusted speed).
+    (2) Sign of torso_angle_y: pitch-level r / slope against the marker thorax tilt (glove side +)."""
+    rows = []
+    ys = resid(y, B)  # body-adjusted athlete speed
+    for ev in ["fp", "mer", "br"]:
+        v = A[f"arm_side_{ev}_cm"].to_numpy()
+
+        def quad(i):
+            vc = v[i] - v[i].mean()
+            X = np.column_stack([B[i], vc, vc ** 2])
+            beta = np.linalg.lstsq(X, y[i], rcond=None)[0]
+            return beta[-1] * 100  # mph per (10 cm)^2
+
+        def groups(i):
+            q20, q80 = np.percentile(v[i], [20, 80])
+            mid = (v[i] > q20) & (v[i] < q80)
+            return ys[i][v[i] <= q20].mean() - ys[i][mid].mean(), ys[i][v[i] >= q80].mean() - ys[i][mid].mean()
+
+        X = np.column_stack([B, v - v.mean(), (v - v.mean()) ** 2])
+        beta, ssr = np.linalg.lstsq(X, y, rcond=None)[:2]
+        se = np.sqrt(ssr[0] / (len(y) - X.shape[1]) * np.linalg.inv(X.T @ X)[-1, -1])
+        g0 = groups(np.arange(len(v)))
+        qb = np.array([quad(i) for i in idx])
+        gb = np.array([groups(i) for i in idx])
+        rows.append({"check": "arm_side_nonlinear", "event": ev, "quad_mph_per_10cm_sq": beta[-1] * 100,
+                     "quad_lo": np.percentile(qb, 2.5), "quad_hi": np.percentile(qb, 97.5),
+                     "quad_p": 2 * stats.t.sf(abs(beta[-1] / se), len(y) - X.shape[1]),
+                     "glove20_minus_mid_mph": g0[0], "glove20_lo": np.percentile(gb[:, 0], 2.5),
+                     "glove20_hi": np.percentile(gb[:, 0], 97.5),
+                     "glove20_cutoff_cm": np.percentile(v, 20),
+                     "arm20_minus_mid_mph": g0[1], "arm20_lo": np.percentile(gb[:, 1], 2.5),
+                     "arm20_hi": np.percentile(gb[:, 1], 97.5), "arm20_cutoff_cm": np.percentile(v, 80)})
+    for ev in ["fp", "mer", "br"]:
+        a, m = df[f"torso_angle_y_{ev}"], df[f"marker_glove_tilt_{ev}_deg"]
+        rows.append({"check": "torso_angle_y_sign", "event": ev, "r_vs_marker_glove_tilt": np.corrcoef(a, m)[0, 1],
+                     "slope_deg_per_deg": np.polyfit(m, a, 1)[0], "torso_angle_y_mean": a.mean(),
+                     "marker_glove_tilt_mean": m.mean(),
+                     "marker_tilt_r_speed_between": np.corrcoef(A[f"marker_glove_tilt_{ev}_deg"], y)[0, 1]})
+    out = pd.DataFrame(rows)
+    out.to_csv(OUT / "lateral_checks.csv", index=False)
+    print(out.round(2).dropna(axis=1, how="all").to_string(index=False))
+
+
 def main():
     OUT.mkdir(exist_ok=True)
     key = ["session_pitch", "time"]
-    pts = ["thorax_prox", "rear_hip", "lead_hip", "shoulder_jc", "glove_shoulder_jc"]
+    pts = ["thorax_prox", "thorax_dist", "rear_hip", "lead_hip", "shoulder_jc", "glove_shoulder_jc"]
     L = pd.read_csv(DATA / "full_sig/landmarks.csv",
                     usecols=key + [f"{p}_{a}" for p in pts for a in "xyz"] + ["fp_poi_time", "MER_time", "BR_time"])
     J = pd.read_csv(DATA / "full_sig/joint_angles.csv", usecols=key + ["torso_angle_y", "torso_angle_x"])
@@ -80,7 +125,13 @@ def main():
         if np.sign(np.interp(br, t, sh)) != (-1 if side == "R" else 1):
             raise ValueError(f"lateral sign check failed {sp}")
         r = {"session_pitch": sp, "session": info.at[sp, "session"], "mer_pct": (mer - fp) / (br - fp) * 100}
+        # marker-based tilt of the thorax long axis (thorax_dist -> thorax_prox): angle out of the lab x-z
+        # plane, glove side +, so forward flexion does not inflate it; used to read the sign of torso_angle_y
+        # when the trunk faces home (MER, BR)
+        d = np.column_stack([(g[f"thorax_prox_{a}"] - g[f"thorax_dist_{a}"]).to_numpy() for a in "xyz"])
+        tilt = np.degrees(np.arcsin(d[:, 1] * (1 if side == "R" else -1) / np.linalg.norm(d, axis=1)))
         for ev, te in [("fp", fp), ("mer", mer), ("br", br)]:
+            r[f"marker_glove_tilt_{ev}_deg"] = np.interp(te, t, tilt)
             for ax, v in off.items():
                 r[f"{ax}_{ev}_cm"] = 100 * np.interp(te, t, v)
             for ang in ["torso_angle_y", "torso_angle_x"]:
@@ -135,6 +186,7 @@ def main():
                             "hi_angle_partial": np.percentile(pb[:, 1], 97.5)})
     res = pd.DataFrame(res)
     res.to_csv(OUT / "event_summary.csv", index=False)
+    lateral_checks(df, A, B, y, idx)
 
     # curves
     sess = df.set_index("session_pitch")["session"]
