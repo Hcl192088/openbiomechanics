@@ -59,6 +59,53 @@ def variability(df):
           .round(2).to_string(index=False))
 
 
+def absolute_angles(df):
+    """Official shoulder_angle_x (horizontal abduction +) at FP-300 ms, trunk onset, FP and its peak in
+    [FP-300 ms, MER], next to the onset-split increments; correlations with pitch speed."""
+    sig = pd.read_csv(DATA / "full_sig/joint_angles.csv",
+                      usecols=["session_pitch", "time", "shoulder_angle_x", "fp_poi_time", "MER_time"])
+    meta = pd.read_csv(DATA / "metadata.csv",
+                       usecols=["session_pitch", "pitch_speed_mph", "session_mass_kg", "session_height_m"])
+    g = dict(tuple(sig.groupby("session_pitch")))
+    rows = []
+    for _, r in df[df["cut"].isin(["official0", "marker0"])].iterrows():
+        x = g[r["session_pitch"]]
+        t, a = x["time"].to_numpy(), x["shoulder_angle_x"].to_numpy()
+        fp, mer = x["fp_poi_time"].iloc[0], x["MER_time"].iloc[0]
+        w = (t >= fp - 0.3) & (t <= mer)
+        on = fp + r["onset_ms"] / 1e3
+        v = {"start": np.interp(fp - 0.3, t, a), "onset": np.interp(on, t, a),
+             "fp": np.interp(fp, t, a), "peak": a[w].max()}
+        v.update(before=v["onset"] - v["start"], after=v["peak"] - v["onset"])
+        rows.append({"cut": r["cut"], "session": r["session"], "session_pitch": r["session_pitch"], **v})
+    o = pd.DataFrame(rows).merge(meta, on="session_pitch", validate="many_to_one")
+    o.to_csv(OUT / "onset_split_absolute_angle_per_pitch.csv", index=False)
+    names = ["start", "onset", "fp", "peak", "before", "after"]
+    rng, res = np.random.default_rng(0), []
+    for cut, d in o.groupby("cut"):
+        A = d.drop(columns=["cut", "session_pitch"]).groupby("session").mean()
+        y = A["pitch_speed_mph"].to_numpy()
+        B = np.column_stack([np.ones(len(A)), A["session_mass_kg"], A["session_height_m"]])
+
+        def resid(v):
+            return v - B @ np.linalg.lstsq(B, v, rcond=None)[0]
+
+        W = d[names + ["pitch_speed_mph"]] - d.groupby("session")[names + ["pitch_speed_mph"]].transform("mean")
+        idx = rng.integers(0, len(A), (NB, len(A)))
+        for c in names:
+            v = A[c].to_numpy()
+            bs = [np.corrcoef(v[i], y[i])[0, 1] for i in idx]
+            res.append((cut, c, len(d), len(A), v.mean(), v.std(ddof=1), np.corrcoef(v, y)[0, 1],
+                        *np.percentile(bs, [2.5, 97.5]), np.corrcoef(resid(v), resid(y))[0, 1],
+                        np.corrcoef(W[c], W["pitch_speed_mph"])[0, 1]))
+        res.append((cut, "r_onset_angle_vs_after", len(d), len(A), np.nan, np.nan,
+                    np.corrcoef(A["onset"], A["after"])[0, 1], np.nan, np.nan, np.nan, np.nan))
+    res = pd.DataFrame(res, columns=["cut", "metric", "pitches", "athletes", "mean", "between_sd", "r_speed",
+                                     "lo", "hi", "r_speed_partial_body", "r_speed_within"])
+    res.to_csv(OUT / "onset_split_absolute_angle_vs_speed.csv", index=False)
+    print(res.round(2).drop(columns=["pitches"]).to_string(index=False))
+
+
 def main():
     df = pd.read_csv(OUT / "trunk_onset_per_pitch.csv")
     meta = pd.read_csv(DATA / "metadata.csv",
@@ -108,6 +155,7 @@ def main():
                 lo, hi = np.nanpercentile(boots[k], [2.5, 97.5])
                 rows.append((cut, seg, len(d), len(ath), k, v, lo, hi))
     variability(df)
+    absolute_angles(df)
     res = pd.DataFrame(rows, columns=["cut", "segment", "pitches", "athletes", "metric", "est", "lo", "hi"])
     res.to_csv(OUT / "onset_split_vs_speed.csv", index=False)
     show = ["share_before", "r_between_before", "r_between_after", "beta_between_before_mph_per_sd",
